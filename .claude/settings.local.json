@@ -9,7 +9,8 @@
       "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\styles.css\" -Force)",
       "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\app.js\" -Force)",
       "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\.nojekyll\" -Force)",
-      "PowerShell(Get-ChildItem \"c:\\\\musiclibrary\" -Force | Where-Object { $_.Name -ne \".claude\" } | Select-Object Name, Length)"
+      "PowerShell(Get-ChildItem \"c:\\\\musiclibrary\" -Force | Where-Object { $_.Name -ne \".claude\" } | Select-Object Name, Length)",
+      "Bash(git config *)"
     ]
   }
 }
