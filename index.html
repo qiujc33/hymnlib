@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>敬拜诗歌库</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>敬拜诗歌库</h1>
+    <p>诗歌乐谱资源</p>
+  </header>
+
+  <main class="main-content">
+
+    <div class="search-row">
+      <input type="text" id="search-input" class="search-input" placeholder="搜索诗歌名称…">
+    </div>
+
+    <div class="filters-header">
+      <span class="filters-title">筛选</span>
+      <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
+    </div>
+    <div id="tag-reference" class="tag-reference" style="display:none"></div>
+    <section class="filters-section" id="filters-section"></section>
+
+    <div class="controls-row">
+      <span id="results-count" class="results-count"></span>
+      <button id="clear-filters-btn" class="btn-text" style="display:none">清除全部筛选</button>
+    </div>
+
+    <div id="song-grid" class="song-grid" style="display:none"></div>
+
+    <div id="loading-state" class="state-message">正在加载诗歌库…</div>
+    <div id="error-state" class="state-message state-error" style="display:none">
+      加载失败，请检查网络连接或联系管理员。
+    </div>
+    <div id="setup-state" class="state-message state-setup" style="display:none">
+      <strong>尚未配置数据源。</strong><br><br>
+      请在 <code>config.js</code> 中填入 Google 表格 CSV 链接。
+    </div>
+
+  </main>
+
+  <!-- PDF Viewer Modal -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2 id="modal-title-cn"></h2>
+          <p id="modal-title-en" class="modal-subtitle"></p>
+        </div>
+        <button id="modal-close" class="modal-close-btn" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-viewer">
+        <iframe id="pdf-frame" src="" allowfullscreen title="乐谱预览"></iframe>
+        <div id="no-pdf-msg" class="no-pdf-msg" style="display:none">此诗歌暂无乐谱文件。</div>
+      </div>
+      <div class="modal-footer">
+        <div id="modal-tags" class="modal-tags"></div>
+        <a id="download-btn" href="#" class="btn-download" target="_blank" rel="noopener">下载乐谱</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

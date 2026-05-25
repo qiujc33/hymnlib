@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(if \\(-not $?\\) { \"Directory is empty or doesn't exist\" })",
+      "Bash(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\index.html\" -Force)",
+      "Bash(Out-Null)",
+      "Bash(Write-Host \"created\")",
+      "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\index.html\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\styles.css\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\app.js\" -Force)",
+      "PowerShell(New-Item -ItemType File -Path \"c:\\\\musiclibrary\\\\.nojekyll\" -Force)",
+      "PowerShell(Get-ChildItem \"c:\\\\musiclibrary\" -Force | Where-Object { $_.Name -ne \".claude\" } | Select-Object Name, Length)"
+    ]
+  }
+}
