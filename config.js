@@ -1,7 +1,7 @@
 const CONFIG = {
   // After publishing your Google Sheet as CSV:
   // File → Share → Publish to web → Sheet1 → CSV → copy link → paste here
-  SHEET_CSV_URL: '',
+  SHEET_CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSNihr9_fMK-UFsRZ4NH7Q9gfARwHJB8uFNj2Vm2JXKYGOlxX5-fLPLnbcOOhu7lg4E9zx_-qxNrxAP/pub?gid=0&single=true&output=csv',
 
   // ---------------------------------------------------------------
   // SHEET COLUMNS (row 1 must have exactly these headers):
