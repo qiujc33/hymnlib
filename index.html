@@ -28,10 +28,18 @@
 
     <div class="controls-row">
       <span id="results-count" class="results-count"></span>
-      <button id="clear-filters-btn" class="btn-text" style="display:none">清除全部筛选</button>
+      <div class="controls-right">
+        <button id="clear-filters-btn" class="btn-text" style="display:none">清除筛选</button>
+        <button id="setlist-fab" class="setlist-btn" style="display:none">选曲 (0)</button>
+        <div class="view-toggle">
+          <button id="view-grid-btn" class="view-btn active" title="卡片视图">▦</button>
+          <button id="view-list-btn" class="view-btn" title="列表视图">☰</button>
+        </div>
+      </div>
     </div>
 
     <div id="song-grid" class="song-grid" style="display:none"></div>
+    <div id="song-list" class="song-list" style="display:none"></div>
 
     <div id="loading-state" class="state-message">正在加载诗歌库…</div>
     <div id="error-state" class="state-message state-error" style="display:none">
@@ -59,12 +67,33 @@
         <div id="no-pdf-msg" class="no-pdf-msg" style="display:none">此诗歌暂无乐谱文件。</div>
       </div>
       <div class="modal-footer">
-        <div id="modal-tags" class="modal-tags"></div>
-        <a id="download-btn" href="#" class="btn-download" target="_blank" rel="noopener">下载乐谱</a>
+        <div class="modal-meta">
+          <div id="modal-tags" class="modal-tags"></div>
+          <p id="modal-notes" class="modal-notes"></p>
+        </div>
+        <a id="download-btn" href="#" class="btn-download" download>下载乐谱</a>
       </div>
     </div>
   </div>
 
+
+
+  <!-- Setlist Panel -->
+  <div id="setlist-panel" class="setlist-panel">
+    <div class="setlist-header">
+      <h3>演唱顺序</h3>
+      <button id="setlist-panel-close" class="modal-close-btn" aria-label="关闭">✕</button>
+    </div>
+    <div id="setlist-body" class="setlist-body">
+      <p class="setlist-empty">尚未选择诗歌</p>
+    </div>
+    <div class="setlist-footer">
+      <button id="setlist-download" class="btn-download" style="display:none">下载合并PDF</button>
+    </div>
+  </div>
+  <div id="setlist-overlay" class="setlist-overlay"></div>
+
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

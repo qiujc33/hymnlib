@@ -4,14 +4,19 @@ const CONFIG = {
   SHEET_CSV_URL: '',
 
   // ---------------------------------------------------------------
-  // TAG REFERENCE — use these exact values when filling the sheet
-  // Multiple tags in one cell: separate with semicolons, e.g. 敬拜;感恩
+  // SHEET COLUMNS (row 1 must have exactly these headers):
+  //   标题 | 英文标题 | 调 | 类型 | 主题 | 场合 | PDF链接 | 备注
+  //
+  // PDF链接  → filename only, e.g.  主祷文.pdf
+  // 主题/场合 → semicolon-separated, e.g.  敬拜;感恩
   // ---------------------------------------------------------------
+
+  // TAG REFERENCE — use these exact values in the sheet
   TAGS: {
     类型: [
       '会众',   // Congregational worship song
       '诗班',   // Choir piece
-      '礼仪',   // Liturgical response (Lord's Prayer, doxology, call to worship, etc.)
+      '礼仪',   // Liturgical — Lord's Prayer, doxology, call to worship, etc.
     ],
     主题: [
       '敬拜',   // Adoration — songs about who God is
