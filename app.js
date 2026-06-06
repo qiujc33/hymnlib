@@ -46,13 +46,13 @@ function setupTheme() {
   const btn = document.getElementById('theme-toggle');
   const apply = theme => {
     document.documentElement.dataset.theme = theme;
-    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    btn.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');
   };
   let theme = document.documentElement.dataset.theme || 'light';
   apply(theme);
   btn.addEventListener('click', () => {
     theme = theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('theme', theme);
+    try { localStorage.setItem('theme', theme); } catch (e) {}
     apply(theme);
   });
 }
@@ -212,7 +212,7 @@ function clearFilters() {
 function updateClearButton() {
   const activeCount = Object.values(activeFilters).reduce((n, s) => n + s.size, 0);
   const has = activeCount > 0 || searchQuery;
-  document.getElementById('clear-filters-btn').style.display = has ? 'inline' : 'none';
+  document.getElementById('clear-filters-btn').disabled = !has;
   // Badge on the sidebar handle shows how many filters are active, even collapsed.
   const badge = document.getElementById('filter-active-count');
   badge.textContent = activeCount || '';

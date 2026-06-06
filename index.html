@@ -7,8 +7,11 @@
   <script>
     // Set the theme before first paint to avoid a flash of the wrong colors.
     (function () {
-      var saved = localStorage.getItem('theme');
-      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var theme = 'light';
+      try {
+        var saved = localStorage.getItem('theme');
+        theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      } catch (e) {}
       document.documentElement.dataset.theme = theme;
     })();
   </script>
@@ -17,7 +20,11 @@
 <body>
 
   <header class="site-header">
-    <button id="theme-toggle" class="theme-toggle" aria-label="切换深色模式">🌙</button>
+    <button id="theme-toggle" class="theme-switch" role="switch" aria-checked="false" aria-label="切换深色模式" title="深色模式">
+      <span class="theme-switch-icon theme-switch-sun">☀</span>
+      <span class="theme-switch-icon theme-switch-moon">☾</span>
+      <span class="theme-switch-knob"></span>
+    </button>
     <h1>敬拜诗歌库</h1>
     <p>诗歌乐谱资源</p>
   </header>
@@ -32,14 +39,11 @@
       </div>
       <div class="filter-drawer-body">
         <div class="filters-header">
-          <span class="filters-title">标签</span>
           <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
+          <button id="clear-filters-btn" class="btn-clear" disabled>清除筛选</button>
         </div>
         <div id="tag-reference" class="tag-reference" style="display:none"></div>
         <section class="filters-section" id="filters-section"></section>
-      </div>
-      <div class="filter-drawer-footer">
-        <button id="clear-filters-btn" class="btn-text" style="display:none">清除筛选</button>
       </div>
     </div>
     <button id="filter-toggle" class="filter-handle" aria-label="展开或收起筛选" aria-controls="filter-drawer">
