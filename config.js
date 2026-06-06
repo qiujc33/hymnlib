@@ -17,6 +17,8 @@ const CONFIG = {
       '会众',   // Congregational worship song
       '诗班',   // Choir piece
       '礼仪',   // Liturgical — Lord's Prayer, doxology, call to worship, etc.
+      '圣诗',   // Traditional hymn
+      '现代',   // Contemporary worship song
     ],
     主题: [
       '敬拜',   // Adoration — songs about who God is
