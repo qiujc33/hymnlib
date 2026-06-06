@@ -18,6 +18,7 @@ async function init() {
   if (!CONFIG.SHEET_CSV_URL) { showState('setup'); return; }
   try {
     allSongs = await fetchSongs();
+    validateTags(allSongs);
     showState('loaded');
     renderFilters();
     renderSongs();
@@ -55,13 +56,14 @@ function parseCSV(text) {
     const values = parseCSVLine(line);
     const obj = {};
     headers.forEach((h, i) => { obj[h] = (values[i] || '').trim(); });
-    const split = val => val ? val.split(';').map(t => t.trim()).filter(Boolean) : [];
+    // Split on both ASCII ';' and full-width '；' — the sheet mixes them.
+    const split = val => val ? val.split(/[;；]/).map(t => t.trim()).filter(Boolean) : [];
     const file = obj['PDF链接'] || '';
     return {
       title:     obj['标题']    || '',
       titleEn:   obj['英文标题'] || '',
       key:       obj['调']      || '',
-      type:      obj['类型']    || '',
+      types:     split(obj['类型']),
       themes:    split(obj['主题']),
       occasions: split(obj['场合']),
       notes:     obj['备注']    || '',
@@ -88,17 +90,46 @@ function parseCSVLine(line) {
 }
 
 // ---- Filters ----
-function getTagsForCategory(cat) {
-  const set = new Set();
-  allSongs.forEach(s => {
-    const vals = cat === 'type' ? (s.type ? [s.type] : [])
-      : cat === 'theme'    ? s.themes
-      : cat === 'occasion' ? s.occasions
-      : cat === 'key'      ? (s.key ? [s.key] : [])
-      : [];
-    vals.forEach(v => set.add(v));
+function valuesFor(song, cat) {
+  switch (cat) {
+    case 'type':     return song.types;
+    case 'theme':    return song.themes;
+    case 'occasion': return song.occasions;
+    case 'key':      return song.key ? [song.key] : [];
+    default:         return [];
+  }
+}
+
+// Map of tag → number of songs carrying it, for one category.
+function getTagCounts(cat) {
+  const counts = new Map();
+  allSongs.forEach(s => valuesFor(s, cat).forEach(v => counts.set(v, (counts.get(v) || 0) + 1)));
+  return counts;
+}
+
+// Categories with a controlled vocabulary in CONFIG.TAGS, mapped to song fields.
+const CANON_CATS = [
+  { cat: 'type',     label: '类型', field: 'types' },
+  { cat: 'theme',    label: '主题', field: 'themes' },
+  { cat: 'occasion', label: '场合', field: 'occasions' },
+];
+
+// Fix 1: warn (in console) about sheet tags that aren't in the canonical list,
+// so typos and drift (e.g. 将临期 vs 降临期) surface instead of silently
+// becoming their own filter button.
+function validateTags(songs) {
+  if (!CONFIG.TAGS) return;
+  CANON_CATS.forEach(({ label, field }) => {
+    const canon = new Set(CONFIG.TAGS[label] || []);
+    const unknown = new Map();
+    songs.forEach(s => s[field].forEach(v => {
+      if (!canon.has(v)) unknown.set(v, (unknown.get(v) || 0) + 1);
+    }));
+    if (unknown.size) {
+      const list = [...unknown.entries()].map(([t, n]) => `${t}（${n}首）`).join('、');
+      console.warn(`[标签校验] 「${label}」中有未登记的标签：${list}`);
+    }
   });
-  return [...set].sort((a, b) => a.localeCompare(b, 'zh'));
 }
 
 function renderFilters() {
@@ -107,7 +138,8 @@ function renderFilters() {
   [{ id: 'type', label: '类型' }, { id: 'theme', label: '主题' },
    { id: 'occasion', label: '场合' }, { id: 'key', label: '调' }]
   .forEach(({ id, label }) => {
-    const tags = getTagsForCategory(id);
+    const counts = getTagCounts(id);
+    const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'zh'));
     if (!tags.length) return;
     activeFilters[id] = new Set();
     const group = document.createElement('div');
@@ -120,7 +152,7 @@ function renderFilters() {
     tags.forEach(tag => {
       const btn = document.createElement('button');
       btn.className = 'tag-btn';
-      btn.textContent = tag;
+      btn.innerHTML = `${esc(tag)} <span class="tag-count">${counts.get(tag)}</span>`;
       btn.addEventListener('click', () => toggleFilter(id, tag, btn));
       tagsDiv.appendChild(btn);
     });
@@ -157,7 +189,7 @@ function songMatches(song) {
     const q = searchQuery.toLowerCase();
     if (!song.title.toLowerCase().includes(q) && !song.titleEn.toLowerCase().includes(q)) return false;
   }
-  if (activeFilters.type     ?.size > 0 && !activeFilters.type.has(song.type))                        return false;
+  if (activeFilters.type     ?.size > 0 && !song.types.some(t => activeFilters.type.has(t)))           return false;
   if (activeFilters.theme    ?.size > 0 && !song.themes.some(t => activeFilters.theme.has(t)))        return false;
   if (activeFilters.occasion ?.size > 0 && !song.occasions.some(t => activeFilters.occasion.has(t))) return false;
   if (activeFilters.key      ?.size > 0 && !activeFilters.key.has(song.key))                          return false;
@@ -173,7 +205,7 @@ function renderSongs() {
 
 function tagPills(song) {
   return [
-    song.type ? `<span class="song-tag type-tag">${esc(song.type)}</span>` : '',
+    ...song.types.map(t => `<span class="song-tag type-tag">${esc(t)}</span>`),
     song.key  ? `<span class="song-tag key-tag">${esc(song.key)}</span>`   : '',
     ...song.themes.map(t    => `<span class="song-tag">${esc(t)}</span>`),
     ...song.occasions.map(t => `<span class="song-tag">${esc(t)}</span>`),
@@ -287,16 +319,44 @@ function handleDirectLink() {
 }
 
 // ---- Tag Reference ----
+// Fix 3: built from real sheet usage (not the static config list) so it can never
+// drift. Canonical tags show their song count; unused ones are greyed; any sheet
+// tag not in the canonical list is flagged as 未登记.
+function refTagsFor(label, field) {
+  const canon = (CONFIG.TAGS && CONFIG.TAGS[label]) || null;
+  const cat = field.replace(/s$/, ''); // themes→theme, types→type, occasions→occasion, key→key
+  const counts = getTagCounts(cat);
+  const seen = new Set();
+  const items = [];
+  (canon || []).forEach(t => {
+    seen.add(t);
+    const n = counts.get(t) || 0;
+    items.push(`<span class="ref-tag${n === 0 ? ' ref-unused' : ''}">${esc(t)}<span class="ref-count">${n}</span></span>`);
+  });
+  [...counts.keys()].filter(t => !seen.has(t)).sort((a, b) => a.localeCompare(b, 'zh')).forEach(t => {
+    const cls = canon ? ' ref-unknown' : '';
+    items.push(`<span class="ref-tag${cls}">${esc(t)}<span class="ref-count">${counts.get(t)}</span></span>`);
+  });
+  return items;
+}
+
 function setupTagReference() {
   const btn   = document.getElementById('tag-ref-btn');
   const panel = document.getElementById('tag-reference');
-  if (!CONFIG.TAGS) return;
-  panel.innerHTML = Object.entries(CONFIG.TAGS).map(([cat, tags]) => `
-    <div class="ref-group">
-      <span class="ref-label">${esc(cat)}</span>
-      <div class="ref-tags">${tags.map(t => `<span class="ref-tag">${esc(t)}</span>`).join('')}</div>
-    </div>
-  `).join('');
+  const groups = [
+    { label: '类型', field: 'types' },
+    { label: '主题', field: 'themes' },
+    { label: '场合', field: 'occasions' },
+    { label: '调',   field: 'key' },
+  ];
+  panel.innerHTML = groups.map(({ label, field }) => {
+    const items = refTagsFor(label, field);
+    if (!items.length) return '';
+    return `<div class="ref-group">
+      <span class="ref-label">${esc(label)}</span>
+      <div class="ref-tags">${items.join('')}</div>
+    </div>`;
+  }).join('') + `<div class="ref-legend"><span class="ref-tag ref-unused">灰色＝未使用</span><span class="ref-tag ref-unknown">＝未登记（表格中有，标签库无）</span></div>`;
   btn.addEventListener('click', () => {
     const open = panel.style.display !== 'none';
     panel.style.display = open ? 'none' : 'block';
@@ -458,18 +518,22 @@ async function renderPdf(url, container) {
     const pdf = await pdfjsLib.getDocument(url).promise;
     if (token !== pdfRenderToken) return;   // a newer song was opened; abandon this render
     container.innerHTML = '';
-    const dpr   = window.devicePixelRatio || 1;
-    const width = container.clientWidth - 32 || 800;   // minus padding
+    const dpr    = window.devicePixelRatio || 1;
+    const availW = (container.clientWidth  || 800) - 32;   // minus padding
+    const availH = (container.clientHeight || 600) - 32;
     for (let n = 1; n <= pdf.numPages; n++) {
       const page = await pdf.getPage(n);
       if (token !== pdfRenderToken) return;
-      const base     = page.getViewport({ scale: 1 });
-      const viewport = page.getViewport({ scale: (width / base.width) * dpr });
+      const base = page.getViewport({ scale: 1 });
+      // Fit the whole page inside the viewer: constrain by width AND height.
+      const fit  = Math.min(availW / base.width, availH / base.height);
+      const viewport = page.getViewport({ scale: fit * dpr });
       const canvas   = document.createElement('canvas');
       canvas.className = 'pdf-page';
       canvas.width  = viewport.width;
       canvas.height = viewport.height;
-      canvas.style.width = '100%';
+      canvas.style.width  = (base.width  * fit) + 'px';   // CSS size = fitted size (dpr is for sharpness only)
+      canvas.style.height = (base.height * fit) + 'px';
       container.appendChild(canvas);
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
     }
