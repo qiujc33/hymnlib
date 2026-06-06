@@ -28,6 +28,7 @@ async function init() {
     setupModal();
     setupTagReference();
     setupViewToggle();
+    setupFilterDrawer();
     handleDirectLink();
   } catch (e) {
     console.error('Failed to load songs:', e);
@@ -182,8 +183,26 @@ function clearFilters() {
 }
 
 function updateClearButton() {
-  const has = Object.values(activeFilters).some(s => s.size > 0) || searchQuery;
+  const activeCount = Object.values(activeFilters).reduce((n, s) => n + s.size, 0);
+  const has = activeCount > 0 || searchQuery;
   document.getElementById('clear-filters-btn').style.display = has ? 'inline' : 'none';
+  // Reflect how many filters are active on the drawer toggle, since the filter
+  // UI is now hidden in the drawer.
+  const toggle = document.getElementById('filter-toggle');
+  toggle.textContent = activeCount > 0 ? `筛选 (${activeCount})` : '筛选';
+  toggle.classList.toggle('active', activeCount > 0);
+}
+
+// ---- Filter drawer ----
+function setupFilterDrawer() {
+  const drawer = document.getElementById('filter-drawer');
+  document.getElementById('filter-toggle').addEventListener('click', () => drawer.classList.toggle('open'));
+  document.getElementById('filter-drawer-close').addEventListener('click', closeFilterDrawer);
+  document.getElementById('filter-overlay').addEventListener('click', closeFilterDrawer);
+}
+
+function closeFilterDrawer() {
+  document.getElementById('filter-drawer').classList.remove('open');
 }
 
 function songMatches(song) {
@@ -370,9 +389,11 @@ function renderSetlistPanel() {
   if (!setlist.length) {
     body.innerHTML = '<p class="setlist-empty">尚未选择诗歌</p>';
     document.getElementById('setlist-download').style.display = 'none';
+    document.getElementById('setlist-clear').style.display = 'none';
     return;
   }
   document.getElementById('setlist-download').style.display = 'inline-block';
+  document.getElementById('setlist-clear').style.display = 'inline';
   body.innerHTML = '';
   setlist.forEach((song, i) => {
     const item = document.createElement('div');
@@ -384,14 +405,29 @@ function renderSetlistPanel() {
       <span class="setlist-item-title">${esc(song.title)}</span>
       <button class="setlist-remove" data-index="${i}" aria-label="移除">×</button>
     `;
-    item.addEventListener('dragstart', e => { dragSrcIndex = i; item.classList.add('dragging'); });
-    item.addEventListener('dragend',   () => item.classList.remove('dragging'));
-    item.addEventListener('dragover',  e => e.preventDefault());
+    item.addEventListener('dragstart', e => {
+      dragSrcIndex = i;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => { item.classList.remove('dragging'); clearDropMarkers(); });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragSrcIndex === null) return;
+      const rect  = item.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      clearDropMarkers();
+      item.classList.add(after ? 'drop-after' : 'drop-before');
+    });
     item.addEventListener('drop', e => {
       e.preventDefault();
-      if (dragSrcIndex === null || dragSrcIndex === i) return;
+      if (dragSrcIndex === null) return;
+      const rect  = item.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      let target  = i + (after ? 1 : 0);
       const moved = setlist.splice(dragSrcIndex, 1)[0];
-      setlist.splice(i, 0, moved);
+      if (dragSrcIndex < target) target--;   // account for the removed item shifting indices
+      setlist.splice(target, 0, moved);
       dragSrcIndex = null;
       renderSetlistPanel();
       renderSongs();
@@ -404,6 +440,18 @@ function renderSetlistPanel() {
     });
     body.appendChild(item);
   });
+}
+
+function clearDropMarkers() {
+  document.querySelectorAll('.setlist-item.drop-before, .setlist-item.drop-after')
+    .forEach(el => el.classList.remove('drop-before', 'drop-after'));
+}
+
+function clearSetlist() {
+  setlist = [];
+  renderSetlistPanel();
+  renderSongs();
+  updateSetlistBtn();
 }
 
 async function downloadSetlistPDF() {
@@ -446,7 +494,7 @@ function setupModal() {
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeSetlistPanel(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeSetlistPanel(); closeFilterDrawer(); } });
 
   // Zoom controls
   document.getElementById('pdf-zoom-in').addEventListener('click',  () => changeZoom(0.25));
@@ -473,6 +521,7 @@ function setupModal() {
     renderSongs();
     renderSetlistPanel();
   });
+  document.getElementById('setlist-clear').addEventListener('click', clearSetlist);
   document.getElementById('setlist-panel-close').addEventListener('click', closeSetlistPanel);
   document.getElementById('setlist-download').addEventListener('click', downloadSetlistPDF);
   document.getElementById('setlist-overlay').addEventListener('click', closeSetlistPanel);

@@ -19,17 +19,12 @@
       <input type="text" id="search-input" class="search-input" placeholder="搜索诗歌名称…">
     </div>
 
-    <div class="filters-header">
-      <span class="filters-title">筛选</span>
-      <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
-    </div>
-    <div id="tag-reference" class="tag-reference" style="display:none"></div>
-    <section class="filters-section" id="filters-section"></section>
-
     <div class="controls-row">
-      <span id="results-count" class="results-count"></span>
+      <div class="controls-left">
+        <button id="filter-toggle" class="filter-toggle-btn" aria-controls="filter-drawer">筛选</button>
+        <span id="results-count" class="results-count"></span>
+      </div>
       <div class="controls-right">
-        <button id="clear-filters-btn" class="btn-text" style="display:none">清除筛选</button>
         <button id="setlist-fab" class="setlist-btn" style="display:none">选曲 (0)</button>
         <div class="view-toggle">
           <button id="view-grid-btn" class="view-btn active" title="卡片视图">▦</button>
@@ -87,11 +82,34 @@
 
 
 
+  <!-- Filter Drawer -->
+  <aside id="filter-drawer" class="filter-drawer">
+    <div class="filter-drawer-header">
+      <h3>筛选</h3>
+      <button id="filter-drawer-close" class="modal-close-btn" aria-label="关闭">✕</button>
+    </div>
+    <div class="filter-drawer-body">
+      <div class="filters-header">
+        <span class="filters-title">标签</span>
+        <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
+      </div>
+      <div id="tag-reference" class="tag-reference" style="display:none"></div>
+      <section class="filters-section" id="filters-section"></section>
+    </div>
+    <div class="filter-drawer-footer">
+      <button id="clear-filters-btn" class="btn-text" style="display:none">清除筛选</button>
+    </div>
+  </aside>
+  <div id="filter-overlay" class="filter-overlay"></div>
+
   <!-- Setlist Panel -->
   <div id="setlist-panel" class="setlist-panel">
     <div class="setlist-header">
       <h3>诗歌顺序</h3>
-      <button id="setlist-panel-close" class="modal-close-btn" aria-label="关闭">✕</button>
+      <div class="setlist-header-actions">
+        <button id="setlist-clear" class="btn-text" style="display:none">清空</button>
+        <button id="setlist-panel-close" class="modal-close-btn" aria-label="关闭">✕</button>
+      </div>
     </div>
     <div id="setlist-body" class="setlist-body">
       <p class="setlist-empty">尚未选择诗歌</p>

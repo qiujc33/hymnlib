@@ -98,8 +98,18 @@ body {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 1rem; min-height: 2rem;
 }
+.controls-left  { display: flex; align-items: center; gap: 0.75rem; }
 .controls-right { display: flex; align-items: center; gap: 0.75rem; }
 .results-count { font-size: 0.88rem; color: var(--text-muted); }
+.filter-toggle-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.35rem 0.9rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--text);
+  font-size: 0.85rem; font-family: inherit; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.filter-toggle-btn:hover  { border-color: var(--primary); color: var(--primary); }
+.filter-toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
 .btn-text {
   background: none; border: none; color: var(--primary);
   font-size: 0.88rem; font-family: inherit; cursor: pointer;
@@ -264,6 +274,37 @@ body {
 }
 .setlist-btn:hover { background: #163d75; }
 
+/* ---- Filter Drawer ---- */
+.filter-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 149; display: none;
+}
+.filter-drawer {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 320px; max-width: 90vw;
+  background: var(--card-bg); z-index: 150; display: flex; flex-direction: column;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  transform: translateX(-100%); transition: transform 0.25s ease;
+}
+.filter-drawer.open { transform: translateX(0); }
+.filter-drawer.open ~ .filter-overlay { display: block; }
+.filter-drawer-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.filter-drawer-header h3 { font-size: 1rem; font-weight: 700; }
+.filter-drawer-body { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
+.filter-drawer-footer {
+  padding: 1rem 1.5rem; border-top: 1px solid var(--border); flex-shrink: 0;
+  min-height: 3.5rem; display: flex; align-items: center;
+}
+/* Inside the drawer the filters are the whole content, so drop the card chrome
+   and stack each group's label above its tags (the column is narrow). */
+.filter-drawer .filters-section {
+  background: none; border: none; border-radius: 0; padding: 0; margin: 0;
+}
+.filter-drawer .filter-group { flex-direction: column; gap: 0.5rem; }
+.filter-drawer .filter-label { padding-top: 0; }
+.filter-drawer .tag-reference { padding: 0.75rem 1rem; }
+
 /* ---- Setlist Panel ---- */
 .setlist-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 149; display: none;
@@ -281,6 +322,7 @@ body {
   padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
 .setlist-header h3 { font-size: 1rem; font-weight: 700; }
+.setlist-header-actions { display: flex; align-items: center; gap: 0.75rem; }
 .setlist-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .setlist-empty { text-align: center; color: var(--text-muted); padding: 2rem 0; font-size: 0.9rem; }
 .setlist-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); flex-shrink: 0; }
@@ -296,6 +338,9 @@ body {
 }
 .setlist-item:hover    { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 .setlist-item.dragging { opacity: 0.4; }
+/* Insertion indicator: a thick primary line on the edge where the song will drop */
+.setlist-item.drop-before { box-shadow: inset 0 3px 0 0 var(--primary); }
+.setlist-item.drop-after  { box-shadow: inset 0 -3px 0 0 var(--primary); }
 .drag-handle     { color: var(--text-muted); font-size: 1rem; cursor: grab; flex-shrink: 0; }
 .setlist-item-title { flex: 1; font-size: 0.9rem; font-weight: 500; }
 .setlist-remove {
