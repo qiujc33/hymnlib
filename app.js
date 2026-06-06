@@ -462,6 +462,19 @@ function setupModal() {
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeSetlistPanel(); } });
 
+  // Zoom controls
+  document.getElementById('pdf-zoom-in').addEventListener('click',  () => changeZoom(0.25));
+  document.getElementById('pdf-zoom-out').addEventListener('click', () => changeZoom(-0.25));
+  document.getElementById('pdf-fit').addEventListener('click', toggleFitPage);
+
+  // Re-fit pages when the window resizes while the viewer is open
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    if (!currentPdfDoc || document.getElementById('modal-overlay').style.display === 'none') return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => drawPdf(), 150);
+  });
+
   // Setlist FAB + panel
   document.getElementById('setlist-fab').addEventListener('click', () => {
     renderSetlistPanel();
@@ -491,52 +504,48 @@ function openModal(song) {
   const pages    = document.getElementById('pdf-pages');
   const noPdfMsg = document.getElementById('no-pdf-msg');
   const dlBtn    = document.getElementById('download-btn');
+  const controls = document.getElementById('pdf-controls');
 
   history.pushState({}, '', `?song=${encodeURIComponent(song.title)}`);
   document.getElementById('modal-overlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
   if (song.downloadUrl) {
-    pages.style.display = 'flex';
+    pages.style.display = 'block';
     noPdfMsg.style.display = 'none';
     dlBtn.href = song.downloadUrl;
     dlBtn.style.display = 'inline-block';
-    renderPdf(song.downloadUrl, pages);   // overlay is visible now, so width is measurable
+    controls.style.display = 'flex';
+    renderPdf(song.downloadUrl);   // overlay is visible now, so width is measurable
   } else {
     pages.innerHTML = '';
     pages.style.display = 'none';
     noPdfMsg.style.display = 'flex';
     dlBtn.style.display = 'none';
+    controls.style.display = 'none';
+    currentPdfDoc = null;
   }
 }
 
-// Render every page of a PDF as a canvas, stacked for continuous scrolling.
-async function renderPdf(url, container) {
+// ---- PDF rendering ----
+let currentPdfDoc = null;   // keep the loaded doc so zoom re-renders without refetching
+let pdfZoom       = 1;      // multiplier on the fit-to-column-width baseline
+let pdfFitPage    = false;  // true = fit whole page in viewport instead of fit-width
+const PDF_COLUMN_MAX = 780; // cap the reading column so the score isn't absurdly wide
+
+// Fetch + load a PDF, then draw it. Zoom changes call drawPdf directly (no refetch).
+async function renderPdf(url) {
   const token = ++pdfRenderToken;
+  const container = document.getElementById('pdf-pages');
   container.innerHTML = '<div class="pdf-loading">乐谱加载中…</div>';
+  pdfZoom = 1;
+  pdfFitPage = false;
+  updateZoomLabel();
   try {
     const pdf = await pdfjsLib.getDocument(url).promise;
     if (token !== pdfRenderToken) return;   // a newer song was opened; abandon this render
-    container.innerHTML = '';
-    const dpr    = window.devicePixelRatio || 1;
-    const availW = (container.clientWidth  || 800) - 32;   // minus padding
-    const availH = (container.clientHeight || 600) - 32;
-    for (let n = 1; n <= pdf.numPages; n++) {
-      const page = await pdf.getPage(n);
-      if (token !== pdfRenderToken) return;
-      const base = page.getViewport({ scale: 1 });
-      // Fit the whole page inside the viewer: constrain by width AND height.
-      const fit  = Math.min(availW / base.width, availH / base.height);
-      const viewport = page.getViewport({ scale: fit * dpr });
-      const canvas   = document.createElement('canvas');
-      canvas.className = 'pdf-page';
-      canvas.width  = viewport.width;
-      canvas.height = viewport.height;
-      canvas.style.width  = (base.width  * fit) + 'px';   // CSS size = fitted size (dpr is for sharpness only)
-      canvas.style.height = (base.height * fit) + 'px';
-      container.appendChild(canvas);
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-    }
+    currentPdfDoc = pdf;
+    await drawPdf(token);
   } catch (e) {
     if (token !== pdfRenderToken) return;
     console.error('PDF render failed:', e);
@@ -544,9 +553,60 @@ async function renderPdf(url, container) {
   }
 }
 
+// Draw every page of the current doc at the current zoom, stacked for scrolling.
+async function drawPdf(token = ++pdfRenderToken) {
+  const pdf = currentPdfDoc;
+  if (!pdf) return;
+  const container = document.getElementById('pdf-pages');
+  container.innerHTML = '';
+  const dpr    = window.devicePixelRatio || 1;
+  const availW = (container.clientWidth  || 800) - 32;   // minus horizontal padding
+  const availH = (container.clientHeight || 600) - 48;   // minus vertical padding
+  const colW   = Math.min(availW, PDF_COLUMN_MAX);
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const page = await pdf.getPage(n);
+    if (token !== pdfRenderToken) return;
+    const base = page.getViewport({ scale: 1 });
+    const fit  = pdfFitPage
+      ? Math.min(availW / base.width, availH / base.height)   // whole page visible
+      : (colW / base.width) * pdfZoom;                        // fill the reading column
+    const viewport = page.getViewport({ scale: fit * dpr });
+    const canvas   = document.createElement('canvas');
+    canvas.className = 'pdf-page';
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.width  = (base.width  * fit) + 'px';   // CSS size = fitted size (dpr is for sharpness only)
+    canvas.style.height = (base.height * fit) + 'px';
+    container.appendChild(canvas);
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  }
+}
+
+function changeZoom(delta) {
+  if (!currentPdfDoc) return;
+  pdfFitPage = false;
+  pdfZoom = Math.min(3, Math.max(0.5, Math.round((pdfZoom + delta) * 100) / 100));
+  updateZoomLabel();
+  drawPdf();
+}
+
+function toggleFitPage() {
+  if (!currentPdfDoc) return;
+  pdfFitPage = !pdfFitPage;
+  if (!pdfFitPage) pdfZoom = 1;
+  updateZoomLabel();
+  drawPdf();
+}
+
+function updateZoomLabel() {
+  const el = document.getElementById('pdf-zoom-label');
+  if (el) el.textContent = pdfFitPage ? '整页' : (pdfZoom === 1 ? '适合宽度' : Math.round(pdfZoom * 100) + '%');
+}
+
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
   pdfRenderToken++;                                   // cancel any in-flight render
+  currentPdfDoc = null;
   document.getElementById('pdf-pages').innerHTML = '';
   document.body.style.overflow = '';
   history.pushState({}, '', window.location.pathname);

@@ -12,6 +12,10 @@ const CONFIG = {
   // ---------------------------------------------------------------
 
   // TAG REFERENCE — use these exact values in the sheet
+  //
+  // Design: 主题 = WHAT a song is about (the topical index, like a hymnal's
+  //         subject index); 场合 = WHEN you'd sing it (church year + life events).
+  //         Calendar seasons live in 场合 only, never as themes.
   TAGS: {
     类型: [
       '会众',   // Congregational worship song
@@ -21,8 +25,7 @@ const CONFIG = {
       '现代',   // Contemporary worship song
     ],
     主题: [
-      '敬拜',   // Adoration — songs about who God is
-      '赞美',   // Praise — celebratory
+      '敬拜',   // Worship & praise — adoration + celebration (merged: the line never held)
       '感恩',   // Thanksgiving / gratitude
       '信靠',   // Trust / faith / surrender
       '盼望',   // Hope / comfort
@@ -30,23 +33,19 @@ const CONFIG = {
       '圣灵',   // Holy Spirit
       '认罪',   // Confession / repentance
       '呼召',   // Call / dedication / consecration
-      '降临',   // Incarnation / Christmas themes
-      '复活',   // Resurrection / Easter themes
       '宣教',   // Mission / evangelism
     ],
     场合: [
-      '主日崇拜',     // Sunday service
-      '圣餐',         // Communion
       '将临期',       // Advent season
       '圣诞节',       // Christmas
       '大斋期',       // Lent
       '受难日',       // Good Friday
       '复活节',       // Easter
       '圣灵降临节',   // Pentecost
+      '圣餐',         // Communion
       '洗礼',         // Baptism
       '婚礼',         // Wedding
       '葬礼',         // Funeral / memorial
-      '小组',         // Small group / cell group
     ],
   },
 };
