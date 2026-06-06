@@ -5,6 +5,7 @@ let searchQuery   = '';
 let viewMode      = 'grid'; // 'grid' | 'list'
 let setlist       = [];     // session-only, resets on close
 let dragSrcIndex  = null;
+let currentSong   = null;   // song shown in the open modal, for the setlist toggle
 let pdfRenderToken = 0;     // guards against stale renders when songs are switched quickly
 
 // Drive PDF.js with our own worker so pages render to canvas (no browser PDF chrome).
@@ -22,6 +23,7 @@ async function init() {
     showState('loaded');
     renderFilters();
     renderSongs();
+    updateSetlistBtn();
     setupSearch();
     setupModal();
     setupTagReference();
@@ -378,12 +380,17 @@ function toggleSetlist(song) {
 
 function updateSetlistBtn() {
   const btn = document.getElementById('setlist-fab');
-  if (setlist.length === 0) {
-    btn.style.display = 'none';
-  } else {
-    btn.textContent = `选曲 (${setlist.length})`;
-    btn.style.display = 'inline-block';
-  }
+  btn.textContent = `选曲 (${setlist.length})`;
+  btn.style.display = 'inline-block';
+}
+
+// Reflect whether the modal's current song is in the setlist on its toggle button.
+function updateModalSetlistBtn() {
+  const btn = document.getElementById('modal-setlist-btn');
+  if (!currentSong) return;
+  const inSetlist = setlist.includes(currentSong);
+  btn.textContent = inSetlist ? '从选曲移除' : '加入选曲';
+  btn.classList.toggle('in-setlist', inSetlist);
 }
 
 function renderSetlistPanel() {
@@ -480,6 +487,13 @@ function setupModal() {
     renderSetlistPanel();
     document.getElementById('setlist-panel').classList.add('open');
   });
+  document.getElementById('modal-setlist-btn').addEventListener('click', () => {
+    if (!currentSong) return;
+    toggleSetlist(currentSong);
+    updateModalSetlistBtn();
+    renderSongs();
+    renderSetlistPanel();
+  });
   document.getElementById('setlist-panel-close').addEventListener('click', closeSetlistPanel);
   document.getElementById('setlist-download').addEventListener('click', downloadSetlistPDF);
   document.getElementById('setlist-overlay').addEventListener('click', closeSetlistPanel);
@@ -490,6 +504,8 @@ function closeSetlistPanel() {
 }
 
 function openModal(song) {
+  currentSong = song;
+  updateModalSetlistBtn();
   document.getElementById('modal-title-cn').textContent = song.title;
   const enEl = document.getElementById('modal-title-en');
   enEl.textContent   = song.titleEn;
