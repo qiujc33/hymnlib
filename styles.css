@@ -251,17 +251,14 @@ body {
   justify-content: center; color: var(--text-muted);
 }
 .modal-footer {
-  display: flex; flex-direction: column; gap: 0.85rem;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
   padding: 1rem 1.5rem; border-top: 1px solid var(--border); flex-shrink: 0;
 }
-.modal-footer-top {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 1rem; flex-wrap: wrap;
-}
-.modal-meta { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
+/* Equal flexible sides push the centered audio player to the true middle. */
+.modal-meta { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.4rem; }
 .modal-tags  { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .modal-notes { font-size: 0.85rem; color: var(--text-muted); }
-.modal-audio { align-self: center; width: 100%; max-width: 420px; height: 2.25rem; }
+.modal-audio { flex: 0 0 auto; width: 100%; max-width: 300px; height: 2.25rem; }
 .btn-download {
   display: inline-block; background: var(--primary); color: white;
   padding: 0.6rem 1.5rem; border-radius: var(--radius);
@@ -272,7 +269,7 @@ body {
 .btn-download:hover    { background: #163d75; }
 .btn-download:disabled { background: var(--text-muted); cursor: not-allowed; }
 
-.modal-actions { display: flex; gap: 0.6rem; flex-shrink: 0; align-items: center; }
+.modal-actions { flex: 1 1 0; display: flex; gap: 0.6rem; justify-content: flex-end; align-items: center; }
 .btn-setlist-toggle {
   display: inline-block; background: white; color: var(--primary);
   padding: 0.6rem 1.5rem; border-radius: var(--radius);
@@ -422,8 +419,10 @@ body {
   .site-header { padding: 1.5rem 1rem; }
   .site-header h1 { font-size: 1.5rem; }
   .main-content { padding: 1rem; }
-  .modal-footer-top { flex-direction: column-reverse; align-items: stretch; }
-  .modal-actions { flex-direction: column; align-items: stretch; }
+  .modal-footer { flex-direction: column; align-items: stretch; }
+  .modal-meta, .modal-actions { flex: none; }
+  .modal-audio { max-width: none; align-self: center; }
+  .modal-actions { flex-direction: column; align-items: stretch; justify-content: flex-start; }
   .btn-download  { text-align: center; }
   .btn-setlist-toggle { text-align: center; }
   .pdf-pages { min-height: 300px; padding: 0.5rem; }
