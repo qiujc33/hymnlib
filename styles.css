@@ -26,8 +26,10 @@ body {
 .site-header p  { opacity: 0.75; margin-top: 0.35rem; font-size: 0.95rem; }
 
 /* ---- Layout ---- */
-.layout { max-width: 1180px; margin: 0 auto; display: flex; align-items: flex-start; }
-.main-content { flex: 1; min-width: 0; padding: 1.5rem; }
+/* Full-width row so the filter sidebar hugs the window's left edge; the content
+   column keeps a readable max-width and centers itself in the remaining space. */
+.layout { display: flex; align-items: flex-start; }
+.main-content { flex: 1; min-width: 0; max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
 
 /* ---- Search ---- */
 .search-row { margin-bottom: 1.25rem; }
