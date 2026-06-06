@@ -6,12 +6,10 @@
   <title>敬拜诗歌库</title>
   <script>
     // Set the theme before first paint to avoid a flash of the wrong colors.
+    // Default to light; honor the user's saved choice if they've toggled before.
     (function () {
       var theme = 'light';
-      try {
-        var saved = localStorage.getItem('theme');
-        theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      } catch (e) {}
+      try { theme = localStorage.getItem('theme') || 'light'; } catch (e) {}
       document.documentElement.dataset.theme = theme;
     })();
   </script>
