@@ -4,11 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>敬拜诗歌库</title>
+  <script>
+    // Set the theme before first paint to avoid a flash of the wrong colors.
+    (function () {
+      var saved = localStorage.getItem('theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <header class="site-header">
+    <button id="theme-toggle" class="theme-toggle" aria-label="切换深色模式">🌙</button>
     <h1>敬拜诗歌库</h1>
     <p>诗歌乐谱资源</p>
   </header>

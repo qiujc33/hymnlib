@@ -18,6 +18,7 @@ if (window.pdfjsLib) {
 
 // ---- Init ----
 async function init() {
+  setupTheme();
   if (!CONFIG.SHEET_CSV_URL) { showState('setup'); return; }
   try {
     allSongs = await fetchSongs();
@@ -36,6 +37,24 @@ async function init() {
     console.error('Failed to load songs:', e);
     showState('error');
   }
+}
+
+// ---- Theme ----
+// The inline head script already set data-theme (saved choice or OS preference);
+// here we sync the button icon and let the user toggle + persist it.
+function setupTheme() {
+  const btn = document.getElementById('theme-toggle');
+  const apply = theme => {
+    document.documentElement.dataset.theme = theme;
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  };
+  let theme = document.documentElement.dataset.theme || 'light';
+  apply(theme);
+  btn.addEventListener('click', () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', theme);
+    apply(theme);
+  });
 }
 
 function showState(state) {
