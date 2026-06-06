@@ -251,14 +251,17 @@ body {
   justify-content: center; color: var(--text-muted);
 }
 .modal-footer {
+  display: flex; flex-direction: column; gap: 0.85rem;
+  padding: 1rem 1.5rem; border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.modal-footer-top {
   display: flex; justify-content: space-between; align-items: flex-start;
-  padding: 1rem 1.5rem; border-top: 1px solid var(--border); gap: 1rem;
-  flex-wrap: wrap; flex-shrink: 0;
+  gap: 1rem; flex-wrap: wrap;
 }
 .modal-meta { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
 .modal-tags  { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .modal-notes { font-size: 0.85rem; color: var(--text-muted); }
-.modal-audio { width: 100%; max-width: 360px; height: 2.25rem; margin-top: 0.25rem; }
+.modal-audio { align-self: center; width: 100%; max-width: 420px; height: 2.25rem; }
 .btn-download {
   display: inline-block; background: var(--primary); color: white;
   padding: 0.6rem 1.5rem; border-radius: var(--radius);
@@ -419,7 +422,7 @@ body {
   .site-header { padding: 1.5rem 1rem; }
   .site-header h1 { font-size: 1.5rem; }
   .main-content { padding: 1rem; }
-  .modal-footer { flex-direction: column-reverse; align-items: stretch; }
+  .modal-footer-top { flex-direction: column-reverse; align-items: stretch; }
   .modal-actions { flex-direction: column; align-items: stretch; }
   .btn-download  { text-align: center; }
   .btn-setlist-toggle { text-align: center; }

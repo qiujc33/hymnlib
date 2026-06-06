@@ -76,7 +76,8 @@ function parseCSV(text) {
       file,
       downloadUrl: file ? `scores/${file}` : '',
       audioFile,
-      audioUrl: audioFile ? `audio/${audioFile}` : '',
+      // Accept either a full URL (external host) or a bare filename (served from audio/).
+      audioUrl: audioFile ? (/^https?:\/\//i.test(audioFile) ? audioFile : `audio/${audioFile}`) : '',
     };
   }).filter(s => s.title);
 }
