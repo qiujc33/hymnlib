@@ -63,7 +63,7 @@
         <button id="modal-close" class="modal-close-btn" aria-label="关闭">✕</button>
       </div>
       <div class="modal-viewer">
-        <iframe id="pdf-frame" src="" allowfullscreen title="乐谱预览"></iframe>
+        <div id="pdf-pages" class="pdf-pages" aria-label="乐谱预览"></div>
         <div id="no-pdf-msg" class="no-pdf-msg" style="display:none">此诗歌暂无乐谱文件。</div>
       </div>
       <div class="modal-footer">
@@ -94,6 +94,7 @@
   <div id="setlist-overlay" class="setlist-overlay"></div>
 
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

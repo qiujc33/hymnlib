@@ -5,6 +5,13 @@ let searchQuery   = '';
 let viewMode      = 'grid'; // 'grid' | 'list'
 let setlist       = [];     // session-only, resets on close
 let dragSrcIndex  = null;
+let pdfRenderToken = 0;     // guards against stale renders when songs are switched quickly
+
+// Drive PDF.js with our own worker so pages render to canvas (no browser PDF chrome).
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+}
 
 // ---- Init ----
 async function init() {
@@ -59,7 +66,6 @@ function parseCSV(text) {
       occasions: split(obj['场合']),
       notes:     obj['备注']    || '',
       file,
-      previewUrl:  file ? `scores/${file}#toolbar=0` : '',
       downloadUrl: file ? `scores/${file}` : '',
     };
   }).filter(s => s.title);
@@ -422,30 +428,62 @@ function openModal(song) {
   notesEl.textContent   = song.notes;
   notesEl.style.display = song.notes ? 'block' : 'none';
 
-  const frame    = document.getElementById('pdf-frame');
+  const pages    = document.getElementById('pdf-pages');
   const noPdfMsg = document.getElementById('no-pdf-msg');
   const dlBtn    = document.getElementById('download-btn');
-  if (song.previewUrl) {
-    frame.src = song.previewUrl;
-    frame.style.display = 'block';
-    noPdfMsg.style.display = 'none';
-    dlBtn.href = song.downloadUrl;
-    dlBtn.style.display = 'inline-block';
-  } else {
-    frame.src = '';
-    frame.style.display = 'none';
-    noPdfMsg.style.display = 'flex';
-    dlBtn.style.display = 'none';
-  }
 
   history.pushState({}, '', `?song=${encodeURIComponent(song.title)}`);
   document.getElementById('modal-overlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  if (song.downloadUrl) {
+    pages.style.display = 'flex';
+    noPdfMsg.style.display = 'none';
+    dlBtn.href = song.downloadUrl;
+    dlBtn.style.display = 'inline-block';
+    renderPdf(song.downloadUrl, pages);   // overlay is visible now, so width is measurable
+  } else {
+    pages.innerHTML = '';
+    pages.style.display = 'none';
+    noPdfMsg.style.display = 'flex';
+    dlBtn.style.display = 'none';
+  }
+}
+
+// Render every page of a PDF as a canvas, stacked for continuous scrolling.
+async function renderPdf(url, container) {
+  const token = ++pdfRenderToken;
+  container.innerHTML = '<div class="pdf-loading">乐谱加载中…</div>';
+  try {
+    const pdf = await pdfjsLib.getDocument(url).promise;
+    if (token !== pdfRenderToken) return;   // a newer song was opened; abandon this render
+    container.innerHTML = '';
+    const dpr   = window.devicePixelRatio || 1;
+    const width = container.clientWidth - 32 || 800;   // minus padding
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      if (token !== pdfRenderToken) return;
+      const base     = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: (width / base.width) * dpr });
+      const canvas   = document.createElement('canvas');
+      canvas.className = 'pdf-page';
+      canvas.width  = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.width = '100%';
+      container.appendChild(canvas);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    }
+  } catch (e) {
+    if (token !== pdfRenderToken) return;
+    console.error('PDF render failed:', e);
+    container.innerHTML = '<div class="pdf-loading">乐谱加载失败，请尝试下载。</div>';
+  }
 }
 
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
-  document.getElementById('pdf-frame').src = '';
+  pdfRenderToken++;                                   // cancel any in-flight render
+  document.getElementById('pdf-pages').innerHTML = '';
   document.body.style.overflow = '';
   history.pushState({}, '', window.location.pathname);
 }
