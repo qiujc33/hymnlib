@@ -26,7 +26,8 @@ body {
 .site-header p  { opacity: 0.75; margin-top: 0.35rem; font-size: 0.95rem; }
 
 /* ---- Layout ---- */
-.main-content { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+.layout { max-width: 1180px; margin: 0 auto; display: flex; align-items: flex-start; }
+.main-content { flex: 1; min-width: 0; padding: 1.5rem; }
 
 /* ---- Search ---- */
 .search-row { margin-bottom: 1.25rem; }
@@ -101,15 +102,6 @@ body {
 .controls-left  { display: flex; align-items: center; gap: 0.75rem; }
 .controls-right { display: flex; align-items: center; gap: 0.75rem; }
 .results-count { font-size: 0.88rem; color: var(--text-muted); }
-.filter-toggle-btn {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  padding: 0.35rem 0.9rem; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--card-bg); color: var(--text);
-  font-size: 0.85rem; font-family: inherit; font-weight: 600;
-  cursor: pointer; transition: all 0.15s; white-space: nowrap;
-}
-.filter-toggle-btn:hover  { border-color: var(--primary); color: var(--primary); }
-.filter-toggle-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
 .btn-text {
   background: none; border: none; color: var(--primary);
   font-size: 0.88rem; font-family: inherit; cursor: pointer;
@@ -274,36 +266,82 @@ body {
 }
 .setlist-btn:hover { background: #163d75; }
 
-/* ---- Filter Drawer ---- */
-.filter-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 149; display: none;
+/* ---- Filter Sidebar ---- */
+/* Desktop: an in-flow left column. The inner panel animates its width to a thin
+   rail when collapsed; the circular handle lives at the rail's edge so it stays
+   visible (and never overlaps the content) in both states. */
+.filter-drawer { position: sticky; top: 0; height: 100vh; align-self: flex-start; flex-shrink: 0; }
+.filter-drawer-inner {
+  width: 280px; height: 100%; overflow-x: hidden; overflow-y: auto;
+  display: flex; flex-direction: column;
+  background: var(--card-bg); border-right: 1px solid var(--border);
+  transition: width 0.25s ease;
 }
-.filter-drawer {
-  position: fixed; top: 0; left: 0; bottom: 0; width: 320px; max-width: 90vw;
-  background: var(--card-bg); z-index: 150; display: flex; flex-direction: column;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-  transform: translateX(-100%); transition: transform 0.25s ease;
-}
-.filter-drawer.open { transform: translateX(0); }
-.filter-drawer.open ~ .filter-overlay { display: block; }
+.filter-drawer.collapsed .filter-drawer-inner { width: 2.75rem; overflow: hidden; }
 .filter-drawer-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  padding: 1.25rem 1.5rem 0.5rem; flex-shrink: 0;
 }
-.filter-drawer-header h3 { font-size: 1rem; font-weight: 700; }
-.filter-drawer-body { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
+.filter-drawer-header h3 { font-size: 1rem; font-weight: 700; white-space: nowrap; }
+.filter-drawer-body  { flex: 1; padding: 0.75rem 1.75rem 0.75rem 1.5rem; }
 .filter-drawer-footer {
-  padding: 1rem 1.5rem; border-top: 1px solid var(--border); flex-shrink: 0;
-  min-height: 3.5rem; display: flex; align-items: center;
+  padding: 0.75rem 1.5rem 1.25rem; flex-shrink: 0;
+  min-height: 2.5rem; display: flex; align-items: center;
 }
-/* Inside the drawer the filters are the whole content, so drop the card chrome
-   and stack each group's label above its tags (the column is narrow). */
+/* Hide the panel's text content while collapsed so it doesn't bleed into the rail */
+.filter-drawer.collapsed .filter-drawer-header,
+.filter-drawer.collapsed .filter-drawer-body,
+.filter-drawer.collapsed .filter-drawer-footer { opacity: 0; pointer-events: none; }
+
+/* Filters fill the panel, so drop the card chrome and stack label above tags */
 .filter-drawer .filters-section {
   background: none; border: none; border-radius: 0; padding: 0; margin: 0;
 }
 .filter-drawer .filter-group { flex-direction: column; gap: 0.5rem; }
 .filter-drawer .filter-label { padding-top: 0; }
 .filter-drawer .tag-reference { padding: 0.75rem 1rem; }
+
+/* Circular toggle handle, anchored to the inner panel's right edge */
+.filter-handle {
+  position: absolute; top: 50%; right: -0.95rem; transform: translateY(-50%);
+  width: 1.9rem; height: 1.9rem; border-radius: 50%; padding: 0;
+  background: var(--primary); color: #fff; border: 2px solid var(--card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: background 0.15s;
+}
+.filter-handle:hover { background: #163d75; }
+.filter-handle-arrow { font-size: 1.15rem; line-height: 1; transition: transform 0.25s ease; }
+.filter-drawer.collapsed .filter-handle-arrow { transform: rotate(180deg); }
+.filter-handle-badge {
+  position: absolute; top: -0.35rem; right: -0.35rem;
+  min-width: 1.05rem; height: 1.05rem; padding: 0 0.25rem; border-radius: 999px;
+  background: #e53e3e; color: #fff; font-size: 0.65rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Dim overlay only used in the mobile (overlay) mode */
+.filter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 149; display: none; }
+
+@media (max-width: 767px) {
+  .layout { display: block; }
+  .filter-drawer {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 150;
+    align-self: auto; transition: transform 0.25s ease;
+  }
+  .filter-drawer.collapsed { transform: translateX(-100%); }
+  .filter-drawer-inner {
+    width: 280px; max-width: 85vw; max-height: none; height: 100vh;
+    position: static; box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  }
+  /* On mobile we slide the whole panel off-screen instead of shrinking it */
+  .filter-drawer.collapsed .filter-drawer-inner { width: 280px; max-width: 85vw; }
+  .filter-drawer.collapsed .filter-drawer-header,
+  .filter-drawer.collapsed .filter-drawer-body,
+  .filter-drawer.collapsed .filter-drawer-footer { opacity: 1; pointer-events: auto; }
+  /* Vertically-centered tab that fully sticks out, so it's tappable when closed */
+  .filter-handle { top: 50%; right: -2.1rem; transform: translateY(-50%); }
+  .filter-drawer:not(.collapsed) ~ .filter-overlay { display: block; }
+}
 
 /* ---- Setlist Panel ---- */
 .setlist-overlay {

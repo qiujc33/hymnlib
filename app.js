@@ -186,23 +186,28 @@ function updateClearButton() {
   const activeCount = Object.values(activeFilters).reduce((n, s) => n + s.size, 0);
   const has = activeCount > 0 || searchQuery;
   document.getElementById('clear-filters-btn').style.display = has ? 'inline' : 'none';
-  // Reflect how many filters are active on the drawer toggle, since the filter
-  // UI is now hidden in the drawer.
-  const toggle = document.getElementById('filter-toggle');
-  toggle.textContent = activeCount > 0 ? `筛选 (${activeCount})` : '筛选';
-  toggle.classList.toggle('active', activeCount > 0);
+  // Badge on the sidebar handle shows how many filters are active, even collapsed.
+  const badge = document.getElementById('filter-active-count');
+  badge.textContent = activeCount || '';
+  badge.style.display = activeCount > 0 ? 'flex' : 'none';
 }
 
-// ---- Filter drawer ----
+// ---- Filter sidebar ----
+// Open by default on wide screens; collapsed by default on narrow screens, where
+// it acts as an overlay drawer. The circular handle toggles it in both cases.
+const filterIsMobile = () => window.matchMedia('(max-width: 767px)').matches;
+
 function setupFilterDrawer() {
   const drawer = document.getElementById('filter-drawer');
-  document.getElementById('filter-toggle').addEventListener('click', () => drawer.classList.toggle('open'));
-  document.getElementById('filter-drawer-close').addEventListener('click', closeFilterDrawer);
+  if (filterIsMobile()) drawer.classList.add('collapsed');
+  document.getElementById('filter-toggle').addEventListener('click', () => drawer.classList.toggle('collapsed'));
   document.getElementById('filter-overlay').addEventListener('click', closeFilterDrawer);
 }
 
+// Only auto-collapses in mobile/overlay mode, so the desktop sidebar never closes
+// unexpectedly on overlay-click or Escape.
 function closeFilterDrawer() {
-  document.getElementById('filter-drawer').classList.remove('open');
+  if (filterIsMobile()) document.getElementById('filter-drawer').classList.add('collapsed');
 }
 
 function songMatches(song) {

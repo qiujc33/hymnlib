@@ -13,6 +13,33 @@
     <p>诗歌乐谱资源</p>
   </header>
 
+  <div class="layout">
+
+  <!-- Filter Sidebar -->
+  <aside id="filter-drawer" class="filter-drawer">
+    <div class="filter-drawer-inner">
+      <div class="filter-drawer-header">
+        <h3>筛选</h3>
+      </div>
+      <div class="filter-drawer-body">
+        <div class="filters-header">
+          <span class="filters-title">标签</span>
+          <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
+        </div>
+        <div id="tag-reference" class="tag-reference" style="display:none"></div>
+        <section class="filters-section" id="filters-section"></section>
+      </div>
+      <div class="filter-drawer-footer">
+        <button id="clear-filters-btn" class="btn-text" style="display:none">清除筛选</button>
+      </div>
+    </div>
+    <button id="filter-toggle" class="filter-handle" aria-label="展开或收起筛选" aria-controls="filter-drawer">
+      <span class="filter-handle-arrow">‹</span>
+      <span id="filter-active-count" class="filter-handle-badge" style="display:none"></span>
+    </button>
+  </aside>
+  <div id="filter-overlay" class="filter-overlay"></div>
+
   <main class="main-content">
 
     <div class="search-row">
@@ -21,7 +48,6 @@
 
     <div class="controls-row">
       <div class="controls-left">
-        <button id="filter-toggle" class="filter-toggle-btn" aria-controls="filter-drawer">筛选</button>
         <span id="results-count" class="results-count"></span>
       </div>
       <div class="controls-right">
@@ -46,6 +72,8 @@
     </div>
 
   </main>
+
+  </div><!-- /.layout -->
 
   <!-- PDF Viewer Modal -->
   <div id="modal-overlay" class="modal-overlay" style="display:none">
@@ -81,26 +109,6 @@
   </div>
 
 
-
-  <!-- Filter Drawer -->
-  <aside id="filter-drawer" class="filter-drawer">
-    <div class="filter-drawer-header">
-      <h3>筛选</h3>
-      <button id="filter-drawer-close" class="modal-close-btn" aria-label="关闭">✕</button>
-    </div>
-    <div class="filter-drawer-body">
-      <div class="filters-header">
-        <span class="filters-title">标签</span>
-        <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
-      </div>
-      <div id="tag-reference" class="tag-reference" style="display:none"></div>
-      <section class="filters-section" id="filters-section"></section>
-    </div>
-    <div class="filter-drawer-footer">
-      <button id="clear-filters-btn" class="btn-text" style="display:none">清除筛选</button>
-    </div>
-  </aside>
-  <div id="filter-overlay" class="filter-overlay"></div>
 
   <!-- Setlist Panel -->
   <div id="setlist-panel" class="setlist-panel">
