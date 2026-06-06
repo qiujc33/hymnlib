@@ -64,6 +64,7 @@ function parseCSV(text) {
     // Split on both ASCII ';' and full-width '；' — the sheet mixes them.
     const split = val => val ? val.split(/[;；]/).map(t => t.trim()).filter(Boolean) : [];
     const file = obj['PDF链接'] || '';
+    const audioFile = obj['音频链接'] || '';
     return {
       title:     obj['标题']    || '',
       titleEn:   obj['英文标题'] || '',
@@ -74,6 +75,8 @@ function parseCSV(text) {
       notes:     obj['备注']    || '',
       file,
       downloadUrl: file ? `scores/${file}` : '',
+      audioFile,
+      audioUrl: audioFile ? `audio/${audioFile}` : '',
     };
   }).filter(s => s.title);
 }
@@ -634,6 +637,17 @@ function openModal(song) {
   notesEl.textContent   = song.notes;
   notesEl.style.display = song.notes ? 'block' : 'none';
 
+  const audioEl = document.getElementById('modal-audio');
+  if (song.audioUrl) {
+    audioEl.src = song.audioUrl;
+    audioEl.style.display = 'block';
+  } else {
+    audioEl.pause();
+    audioEl.removeAttribute('src');
+    audioEl.load();           // drop the previous song's audio
+    audioEl.style.display = 'none';
+  }
+
   const pages    = document.getElementById('pdf-pages');
   const noPdfMsg = document.getElementById('no-pdf-msg');
   const dlBtn    = document.getElementById('download-btn');
@@ -738,6 +752,7 @@ function updateZoomLabel() {
 
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
+  document.getElementById('modal-audio').pause();     // stop playback on close
   pdfRenderToken++;                                   // cancel any in-flight render
   currentPdfDoc = null;
   document.getElementById('pdf-pages').innerHTML = '';

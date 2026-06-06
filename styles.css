@@ -258,6 +258,7 @@ body {
 .modal-meta { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
 .modal-tags  { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .modal-notes { font-size: 0.85rem; color: var(--text-muted); }
+.modal-audio { width: 100%; max-width: 360px; height: 2.25rem; margin-top: 0.25rem; }
 .btn-download {
   display: inline-block; background: var(--primary); color: white;
   padding: 0.6rem 1.5rem; border-radius: var(--radius);

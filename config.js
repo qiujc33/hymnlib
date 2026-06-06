@@ -5,9 +5,10 @@ const CONFIG = {
 
   // ---------------------------------------------------------------
   // SHEET COLUMNS (row 1 must have exactly these headers):
-  //   标题 | 英文标题 | 调 | 类型 | 主题 | 场合 | PDF链接 | 备注
+  //   标题 | 英文标题 | 调 | 类型 | 主题 | 场合 | PDF链接 | 音频链接 | 备注
   //
-  // PDF链接  → filename only, e.g.  主祷文.pdf
+  // PDF链接  → filename only, e.g.  主祷文.pdf      (served from scores/)
+  // 音频链接 → filename only, e.g.  主祷文.mp3      (served from audio/, optional)
   // 主题/场合 → semicolon-separated, e.g.  敬拜;感恩
   // ---------------------------------------------------------------
 
