@@ -2,7 +2,9 @@
 let allSongs   = [];
 let activeFilters = {};
 let searchQuery   = '';
-let viewMode      = 'grid'; // 'grid' | 'list'
+let viewMode      = 'list'; // 'grid' | 'list'
+let currentPage   = 1;
+const PAGE_SIZE   = { grid: 21, list: 20 };
 let setlist       = [];     // session-only, resets on close
 let dragSrcIndex  = null;
 let currentSong   = null;   // song shown in the open modal, for the setlist toggle
@@ -170,6 +172,7 @@ function toggleFilter(cat, tag, btn) {
   activeFilters[cat].has(tag) ? (activeFilters[cat].delete(tag), btn.classList.remove('active'))
                               : (activeFilters[cat].add(tag),    btn.classList.add('active'));
   updateClearButton();
+  currentPage = 1;
   renderSongs();
 }
 
@@ -179,6 +182,7 @@ function clearFilters() {
   searchQuery = '';
   document.getElementById('search-input').value = '';
   updateClearButton();
+  currentPage = 1;
   renderSongs();
 }
 
@@ -227,9 +231,65 @@ function songMatches(song) {
 
 // ---- Render songs ----
 function renderSongs() {
-  const filtered = allSongs.filter(songMatches);
+  let filtered = allSongs.filter(songMatches);
+  // List view is alphabetical, so sort the whole set before paginating;
+  // grid keeps the sheet's order.
+  if (viewMode === 'list') filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title, 'zh'));
+
+  const size = PAGE_SIZE[viewMode];
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+  currentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const pageItems = filtered.slice((currentPage - 1) * size, currentPage * size);
+
   document.getElementById('results-count').textContent = `共 ${filtered.length} 首`;
-  viewMode === 'grid' ? renderGrid(filtered) : renderList(filtered);
+  viewMode === 'grid' ? renderGrid(pageItems) : renderList(pageItems);
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el = document.getElementById('pagination');
+  if (totalPages <= 1) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '';
+
+  const btn = (label, page, { disabled = false, active = false } = {}) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    if (!disabled && !active) b.addEventListener('click', () => goToPage(page));
+    return b;
+  };
+
+  el.appendChild(btn('‹', currentPage - 1, { disabled: currentPage === 1 }));
+  pageList(currentPage, totalPages).forEach(tok => {
+    if (tok === '…') {
+      const span = document.createElement('span');
+      span.className = 'page-ellipsis';
+      span.textContent = '…';
+      el.appendChild(span);
+    } else {
+      el.appendChild(btn(String(tok), tok, { active: tok === currentPage }));
+    }
+  });
+  el.appendChild(btn('›', currentPage + 1, { disabled: currentPage === totalPages }));
+}
+
+// Windowed page numbers: first, last, current ±1, with ellipses when there's a gap.
+function pageList(cur, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const out = [1];
+  if (cur > 3) out.push('…');
+  for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) out.push(i);
+  if (cur < total - 2) out.push('…');
+  out.push(total);
+  return out;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderSongs();
+  document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function tagPills(song) {
@@ -239,6 +299,24 @@ function tagPills(song) {
     ...song.themes.map(t    => `<span class="song-tag">${esc(t)}</span>`),
     ...song.occasions.map(t => `<span class="song-tag">${esc(t)}</span>`),
   ].join('');
+}
+
+// A real link to the song (?song=Title), which handleDirectLink resolves on load,
+// so titles support right-click / open-in-new-tab.
+function songLink(song) {
+  return `?song=${encodeURIComponent(song.title)}`;
+}
+
+// Left-click opens the modal in place (existing behavior); Ctrl/Cmd/Shift/middle-click
+// fall through to the browser so the link opens in a new tab.
+function bindSongLink(link, song) {
+  if (!link) return;
+  link.addEventListener('click', e => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) { e.stopPropagation(); return; }
+    e.preventDefault();
+    e.stopPropagation();
+    openModal(song);
+  });
 }
 
 function renderGrid(filtered) {
@@ -254,7 +332,7 @@ function renderGrid(filtered) {
     card.setAttribute('tabindex', '0');
     const inSetlist = setlist.includes(song);
     card.innerHTML = `
-      <div class="song-card-title">${esc(song.title)}</div>
+      <a class="song-card-title song-link" href="${songLink(song)}">${esc(song.title)}</a>
       ${song.titleEn ? `<div class="song-card-en">${esc(song.titleEn)}</div>` : ''}
       <div class="song-card-tags">${tagPills(song)}</div>
       <button class="add-setlist-btn ${inSetlist ? 'in-setlist' : ''}" title="${inSetlist ? '从选曲移除' : '加入选曲'}">
@@ -267,6 +345,7 @@ function renderGrid(filtered) {
       renderSongs();
       renderSetlistPanel();
     });
+    bindSongLink(card.querySelector('.song-link'), song);
     card.addEventListener('click', () => openModal(song));
     card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openModal(song); });
     grid.appendChild(card);
@@ -287,7 +366,7 @@ function renderList(filtered) {
       <tbody>
         ${sorted.map(song => `
           <tr class="song-row" data-title="${esc(song.title)}">
-            <td class="song-row-title">${esc(song.title)}</td>
+            <td class="song-row-title"><a class="song-link" href="${songLink(song)}">${esc(song.title)}</a></td>
             <td class="song-row-en">${esc(song.titleEn)}</td>
             <td>${tagPills(song)}</td>
             <td>
@@ -302,8 +381,9 @@ function renderList(filtered) {
   `;
   listEl.querySelectorAll('.song-row').forEach(row => {
     const song = sorted.find(s => s.title === row.dataset.title);
+    bindSongLink(row.querySelector('.song-link'), song);
     row.addEventListener('click', e => {
-      if (e.target.closest('.add-setlist-btn')) return;
+      if (e.target.closest('.add-setlist-btn') || e.target.closest('.song-link')) return;
       openModal(song);
     });
     row.querySelector('.add-setlist-btn').addEventListener('click', e => {
@@ -325,6 +405,7 @@ function setView(mode) {
   viewMode = mode;
   document.getElementById('view-grid-btn').classList.toggle('active', mode === 'grid');
   document.getElementById('view-list-btn').classList.toggle('active', mode === 'list');
+  currentPage = 1;
   renderSongs();
 }
 
@@ -334,7 +415,7 @@ function setupSearch() {
   let timer;
   input.addEventListener('input', () => {
     clearTimeout(timer);
-    timer = setTimeout(() => { searchQuery = input.value.trim(); updateClearButton(); renderSongs(); }, 200);
+    timer = setTimeout(() => { searchQuery = input.value.trim(); updateClearButton(); currentPage = 1; renderSongs(); }, 200);
   });
 }
 
