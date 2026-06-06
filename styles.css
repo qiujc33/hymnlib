@@ -304,15 +304,19 @@ body {
 
 /* Circular toggle handle, anchored to the inner panel's right edge */
 .filter-handle {
-  position: absolute; top: 50%; right: -0.95rem; transform: translateY(-50%);
-  width: 1.9rem; height: 1.9rem; border-radius: 50%; padding: 0;
+  position: absolute; top: 50%; right: -1.25rem; transform: translateY(-50%);
+  width: 2.5rem; border-radius: 999px; padding: 0.65rem 0;
   background: var(--primary); color: #fff; border: 2px solid var(--card-bg);
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
   cursor: pointer; z-index: 3; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   transition: background 0.15s;
 }
 .filter-handle:hover { background: #163d75; }
-.filter-handle-arrow { font-size: 1.15rem; line-height: 1; transition: transform 0.25s ease; }
+.filter-handle-arrow { font-size: 1.5rem; line-height: 1; transition: transform 0.25s ease; }
+.filter-handle-label {
+  writing-mode: vertical-rl; text-orientation: upright;
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; line-height: 1;
+}
 .filter-drawer.collapsed .filter-handle-arrow { transform: rotate(180deg); }
 .filter-handle-badge {
   position: absolute; top: -0.35rem; right: -0.35rem;
@@ -341,7 +345,7 @@ body {
   .filter-drawer.collapsed .filter-drawer-body,
   .filter-drawer.collapsed .filter-drawer-footer { opacity: 1; pointer-events: auto; }
   /* Vertically-centered tab that fully sticks out, so it's tappable when closed */
-  .filter-handle { top: 50%; right: -2.1rem; transform: translateY(-50%); }
+  .filter-handle { top: 50%; right: -2.6rem; transform: translateY(-50%); }
   .filter-drawer:not(.collapsed) ~ .filter-overlay { display: block; }
 }
 

@@ -199,7 +199,10 @@ const filterIsMobile = () => window.matchMedia('(max-width: 767px)').matches;
 
 function setupFilterDrawer() {
   const drawer = document.getElementById('filter-drawer');
-  if (filterIsMobile()) drawer.classList.add('collapsed');
+  // Sensible default per screen size: open on desktop, collapsed (slide-in) on mobile.
+  const applyDefault = () => drawer.classList.toggle('collapsed', filterIsMobile());
+  applyDefault();
+  window.matchMedia('(max-width: 767px)').addEventListener('change', applyDefault);
   document.getElementById('filter-toggle').addEventListener('click', () => drawer.classList.toggle('collapsed'));
   document.getElementById('filter-overlay').addEventListener('click', closeFilterDrawer);
 }
