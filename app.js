@@ -59,7 +59,7 @@ function parseCSV(text) {
       occasions: split(obj['场合']),
       notes:     obj['备注']    || '',
       file,
-      previewUrl:  file ? `scores/${file}` : '',
+      previewUrl:  file ? `scores/${file}#toolbar=0` : '',
       downloadUrl: file ? `scores/${file}` : '',
     };
   }).filter(s => s.title);
