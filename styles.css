@@ -55,12 +55,6 @@ body {
   margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;
 }
 .ref-group { display: flex; flex-direction: column; gap: 0.5rem; }
-.ref-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
-.ref-label {
-  font-size: 0.78rem; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
-}
-.ref-note { font-size: 0.75rem; color: var(--text-muted); }
 .ref-items {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.4rem 1rem;

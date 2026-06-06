@@ -321,26 +321,15 @@ function handleDirectLink() {
 }
 
 // ---- Tag Reference ----
-// A glossary of what each tag means, built from CONFIG.TAGS (term → description).
+// A glossary of what the 主题 tags mean, built from CONFIG.TAGS (term → description).
 function setupTagReference() {
   const btn   = document.getElementById('tag-ref-btn');
   const panel = document.getElementById('tag-reference');
-  const groups = [
-    { label: '类型', note: '诗歌的曲风类别' },
-    { label: '主题', note: '诗歌的内容主旨' },
-    { label: '场合', note: '适合演唱的时节或礼仪' },
-  ];
-  panel.innerHTML = groups.map(({ label, note }) => {
-    const defs = (CONFIG.TAGS && CONFIG.TAGS[label]) || null;
-    if (!defs) return '';
-    const items = Object.entries(defs).map(([tag, meaning]) =>
-      `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
-    ).join('');
-    return `<div class="ref-group">
-      <div class="ref-head"><span class="ref-label">${esc(label)}</span><span class="ref-note">${esc(note)}</span></div>
-      <div class="ref-items">${items}</div>
-    </div>`;
-  }).join('');
+  const defs  = (CONFIG.TAGS && CONFIG.TAGS['主题']) || {};
+  const items = Object.entries(defs).map(([tag, meaning]) =>
+    `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
+  ).join('');
+  panel.innerHTML = `<div class="ref-group"><div class="ref-items">${items}</div></div>`;
   btn.addEventListener('click', () => {
     const open = panel.style.display !== 'none';
     panel.style.display = open ? 'none' : 'block';
