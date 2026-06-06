@@ -2,7 +2,7 @@
 let allSongs   = [];
 let activeFilters = {};
 let searchQuery   = '';
-let viewMode      = 'list'; // 'grid' | 'list'
+let viewMode      = 'grid'; // 'grid' | 'list'
 let currentPage   = 1;
 const PAGE_SIZE   = { grid: 21, list: 20 };
 let setlist       = [];     // session-only, resets on close

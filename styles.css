@@ -189,6 +189,12 @@ body {
 .song-row:last-child td { border-bottom: none; }
 .song-row-title { font-weight: 600; font-size: 0.95rem; }
 .song-row-en    { font-size: 0.83rem; color: var(--text-muted); }
+/* Grid cards position the add button absolutely over the card; in the list it sits
+   inline in its own cell instead. */
+.song-table .add-setlist-btn { position: static; }
+.song-row td:last-child { width: 1px; white-space: nowrap; text-align: center; }
+.song-row td:nth-child(3) { width: 40%; }
+.song-row td:nth-child(3) .song-tag { display: inline-flex; }
 
 /* ---- State messages ---- */
 .state-message  { text-align: center; padding: 4rem 1rem; color: var(--text-muted); }
@@ -427,4 +433,12 @@ body {
   .btn-setlist-toggle { text-align: center; }
   .pdf-pages { min-height: 300px; padding: 0.5rem; }
   .setlist-fab { bottom: 1rem; right: 1rem; }
+
+  /* List view: drop the secondary English column and tighten padding so the
+     tags and + button fit on screen instead of being cut off. */
+  .song-table thead th:nth-child(2),
+  .song-row-en { display: none; }
+  .song-row td { padding: 0.6rem 0.5rem; }
+  .song-row td:nth-child(3) { width: auto; }
+  .song-row-title { font-size: 0.9rem; }
 }
