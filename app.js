@@ -117,12 +117,12 @@ const CANON_CATS = [
 ];
 
 // Fix 1: warn (in console) about sheet tags that aren't in the canonical list,
-// so typos and drift (e.g. 将临期 vs 降临期) surface instead of silently
+// so typos and drift (e.g. 降临节 vs 降临期) surface instead of silently
 // becoming their own filter button.
 function validateTags(songs) {
   if (!CONFIG.TAGS) return;
   CANON_CATS.forEach(({ label, field }) => {
-    const canon = new Set(CONFIG.TAGS[label] || []);
+    const canon = new Set(Object.keys(CONFIG.TAGS[label] || {}));
     const unknown = new Map();
     songs.forEach(s => s[field].forEach(v => {
       if (!canon.has(v)) unknown.set(v, (unknown.get(v) || 0) + 1);
@@ -321,44 +321,26 @@ function handleDirectLink() {
 }
 
 // ---- Tag Reference ----
-// Fix 3: built from real sheet usage (not the static config list) so it can never
-// drift. Canonical tags show their song count; unused ones are greyed; any sheet
-// tag not in the canonical list is flagged as 未登记.
-function refTagsFor(label, field) {
-  const canon = (CONFIG.TAGS && CONFIG.TAGS[label]) || null;
-  const cat = field.replace(/s$/, ''); // themes→theme, types→type, occasions→occasion, key→key
-  const counts = getTagCounts(cat);
-  const seen = new Set();
-  const items = [];
-  (canon || []).forEach(t => {
-    seen.add(t);
-    const n = counts.get(t) || 0;
-    items.push(`<span class="ref-tag${n === 0 ? ' ref-unused' : ''}">${esc(t)}<span class="ref-count">${n}</span></span>`);
-  });
-  [...counts.keys()].filter(t => !seen.has(t)).sort((a, b) => a.localeCompare(b, 'zh')).forEach(t => {
-    const cls = canon ? ' ref-unknown' : '';
-    items.push(`<span class="ref-tag${cls}">${esc(t)}<span class="ref-count">${counts.get(t)}</span></span>`);
-  });
-  return items;
-}
-
+// A glossary of what each tag means, built from CONFIG.TAGS (term → description).
 function setupTagReference() {
   const btn   = document.getElementById('tag-ref-btn');
   const panel = document.getElementById('tag-reference');
   const groups = [
-    { label: '类型', field: 'types' },
-    { label: '主题', field: 'themes' },
-    { label: '场合', field: 'occasions' },
-    { label: '调',   field: 'key' },
+    { label: '类型', note: '诗歌的曲风类别' },
+    { label: '主题', note: '诗歌的内容主旨' },
+    { label: '场合', note: '适合演唱的时节或礼仪' },
   ];
-  panel.innerHTML = groups.map(({ label, field }) => {
-    const items = refTagsFor(label, field);
-    if (!items.length) return '';
+  panel.innerHTML = groups.map(({ label, note }) => {
+    const defs = (CONFIG.TAGS && CONFIG.TAGS[label]) || null;
+    if (!defs) return '';
+    const items = Object.entries(defs).map(([tag, meaning]) =>
+      `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
+    ).join('');
     return `<div class="ref-group">
-      <span class="ref-label">${esc(label)}</span>
-      <div class="ref-tags">${items.join('')}</div>
+      <div class="ref-head"><span class="ref-label">${esc(label)}</span><span class="ref-note">${esc(note)}</span></div>
+      <div class="ref-items">${items}</div>
     </div>`;
-  }).join('') + `<div class="ref-legend"><span class="ref-tag ref-unused">灰色＝未使用</span><span class="ref-tag ref-unknown">＝未登记（表格中有，标签库无）</span></div>`;
+  }).join('');
   btn.addEventListener('click', () => {
     const open = panel.style.display !== 'none';
     panel.style.display = open ? 'none' : 'block';
