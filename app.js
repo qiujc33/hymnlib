@@ -452,13 +452,21 @@ async function downloadSetlistPDF() {
       } catch (e) { console.warn(`Skipped ${song.file}:`, e); }
     }
     const blob = new Blob([await merged.save()], { type: 'application/pdf' });
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: '诗歌顺序.pdf' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: setlistFileName() });
     a.click();
     URL.revokeObjectURL(a.href);
   } finally {
     btn.textContent = '下载合并PDF';
     btn.disabled = false;
   }
+}
+
+// e.g. 诗歌-2026-06-06-5首.pdf
+function setlistFileName() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return `诗歌-${date}-${setlist.length}首.pdf`;
 }
 
 // ---- Modal ----
