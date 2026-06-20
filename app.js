@@ -2,7 +2,11 @@
 let allSongs   = [];
 let activeFilters = {};
 let searchQuery   = '';
-let viewMode      = 'grid'; // 'grid' | 'list'
+// 'grid' | 'list' — restored from the user's last visit (falls back to grid).
+let viewMode = (() => {
+  try { return localStorage.getItem('viewMode') === 'list' ? 'list' : 'grid'; }
+  catch (e) { return 'grid'; }
+})();
 let currentPage   = 1;
 const PAGE_SIZE   = { grid: 21, list: 20 };
 let setlist       = [];     // session-only, resets on close
@@ -421,10 +425,14 @@ function renderList(filtered) {
 function setupViewToggle() {
   document.getElementById('view-grid-btn').addEventListener('click', () => setView('grid'));
   document.getElementById('view-list-btn').addEventListener('click', () => setView('list'));
+  // Sync the toggle buttons with the restored view (HTML defaults to grid active).
+  document.getElementById('view-grid-btn').classList.toggle('active', viewMode === 'grid');
+  document.getElementById('view-list-btn').classList.toggle('active', viewMode === 'list');
 }
 
 function setView(mode) {
   viewMode = mode;
+  try { localStorage.setItem('viewMode', mode); } catch (e) {}
   document.getElementById('view-grid-btn').classList.toggle('active', mode === 'grid');
   document.getElementById('view-list-btn').classList.toggle('active', mode === 'list');
   currentPage = 1;
