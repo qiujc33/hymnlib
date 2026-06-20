@@ -255,9 +255,8 @@ function songMatches(song) {
 // ---- Render songs ----
 function renderSongs() {
   let filtered = allSongs.filter(songMatches);
-  // List view is alphabetical, so sort the whole set before paginating;
-  // grid keeps the sheet's order.
-  if (viewMode === 'list') filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title, 'zh'));
+  // Both views are pinyin-ordered; sort the whole set before paginating.
+  filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title, 'zh'));
 
   const size = PAGE_SIZE[viewMode];
   const totalPages = Math.max(1, Math.ceil(filtered.length / size));
@@ -379,7 +378,7 @@ function renderList(filtered) {
   const listEl = document.getElementById('song-list');
   document.getElementById('song-grid').style.display = 'none';
   listEl.style.display = 'block';
-  const sorted = [...filtered].sort((a, b) => a.title.localeCompare(b.title, 'zh'));
+  const sorted = filtered;   // already pinyin-sorted in renderSongs
   if (!sorted.length) { listEl.innerHTML = '<div class="no-results">没有找到符合条件的诗歌</div>'; return; }
   listEl.innerHTML = `
     <table class="song-table">
