@@ -469,14 +469,9 @@ function setupTagReference() {
 
 // ---- Setlist ----
 function toggleSetlist(song) {
-  const wasEmpty = setlist.length === 0;
   const idx = setlist.indexOf(song);
   idx === -1 ? setlist.push(song) : setlist.splice(idx, 1);
   updateSetlistBtn();
-  if (wasEmpty && setlist.length === 1) {
-    renderSetlistPanel();
-    document.getElementById('setlist-panel').classList.add('open');
-  }
 }
 
 function updateSetlistBtn() {
