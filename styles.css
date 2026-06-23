@@ -249,7 +249,11 @@ body {
   padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); gap: 1rem; flex-shrink: 0;
 }
 .modal-title-group { flex: 1; min-width: 0; }
-.modal-title-group h2 { font-size: 1.2rem; line-height: 1.4; }
+.modal-title-group h2 {
+  font-size: 1.2rem; line-height: 1.4;
+  /* Cap a long title at two lines so it never crowds the zoom/close controls. */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .modal-subtitle { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
 .modal-close-btn {
   font-size: 1.1rem; background: none; border: none; cursor: pointer;
@@ -387,7 +391,9 @@ body {
 /* Dim overlay only used in the mobile (overlay) mode */
 .filter-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 149; display: none; }
 
-@media (max-width: 767px) {
+/* Tablets and below (≤1024px, covers iPad portrait) use the slide-in overlay
+   drawer instead of the in-flow rail, which is too narrow at these widths. */
+@media (max-width: 1024px) {
   .layout { display: block; }
   .filter-drawer {
     position: fixed; top: 0; left: 0; bottom: 0; z-index: 150;
@@ -453,6 +459,25 @@ body {
 .setlist-remove:hover { color: #c53030; }
 
 /* ---- Responsive ---- */
+/* Tablet portrait (e.g. iPad, 768–834px) sits above the phone breakpoint, but the
+   horizontal modal footer still cramps there: text wraps and the centered audio
+   player gets squeezed. Give tablets the same roomy, stacked footer as phones. */
+@media (min-width: 601px) and (max-width: 900px) {
+  .modal-footer { flex-direction: column; align-items: stretch; }
+  .modal-meta, .modal-actions { flex: none; }
+  .modal-audio { max-width: none; width: 100%; align-self: stretch; }
+  .modal-actions { justify-content: stretch; }
+  .modal-actions .btn-download,
+  .modal-actions .btn-setlist-toggle { flex: 1; text-align: center; }
+}
+
+/* Touch devices (phones + tablets): the mouse-sized close ✕ and zoom buttons are
+   hard to tap. Enlarge them to a comfortable touch target. */
+@media (pointer: coarse) {
+  .modal-close-btn { font-size: 1.5rem; padding: 0.5rem 0.7rem; }
+  .pdf-ctrl-btn { width: 2.4rem; height: 2.4rem; }
+}
+
 @media (max-width: 600px) {
   .site-header { padding: 1.5rem 1rem; }
   .site-header h1 { font-size: 1.5rem; }
