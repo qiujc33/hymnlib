@@ -32,6 +32,7 @@ async function init() {
     renderSongs();
     updateSetlistBtn();
     setupSearch();
+    loadPinyin();
     setupModal();
     setupTagReference();
     setupViewToggle();
@@ -247,7 +248,11 @@ function closeFilterDrawer() {
 function songMatches(song) {
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    if (!song.title.toLowerCase().includes(q) && !song.titleEn.toLowerCase().includes(q)) return false;
+    const hit = song.title.toLowerCase().includes(q)
+             || song.titleEn.toLowerCase().includes(q)
+             || (song.pinyin        && song.pinyin.includes(q))          // full pinyin, e.g. "yesu"
+             || (song.pinyinInitials && song.pinyinInitials.includes(q)); // initials, e.g. "ys"
+    if (!hit) return false;
   }
   if (activeFilters.type     ?.size > 0 && !song.types.some(t => activeFilters.type.has(t)))           return false;
   if (activeFilters.theme    ?.size > 0 && !song.themes.some(t => activeFilters.theme.has(t)))        return false;
@@ -439,6 +444,26 @@ function setView(mode) {
   renderSongs();
 }
 
+// ---- Pinyin search ----
+// Load pinyin-pro lazily (it carries a Han→pinyin dictionary, ~100KB) so it never
+// blocks first paint. Once ready, precompute each song's full pinyin ("yesu") and
+// initials ("ys") so searching stays instant, then refresh if a query is pending.
+function loadPinyin() {
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/pinyin-pro@3.26.0/dist/index.js';
+  s.onload = () => {
+    const { pinyin } = window.pinyinPro || {};
+    if (!pinyin) return;
+    allSongs.forEach(song => {
+      song.pinyin         = pinyin(song.title, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+      song.pinyinInitials = pinyin(song.title, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toLowerCase();
+    });
+    if (searchQuery) renderSongs();   // apply pinyin matching to the current query
+  };
+  s.onerror = () => console.warn('pinyin-pro failed to load; search falls back to 中文/English only.');
+  document.head.appendChild(s);
+}
+
 // ---- Search ----
 function setupSearch() {
   const input = document.getElementById('search-input');
@@ -512,40 +537,15 @@ function renderSetlistPanel() {
   setlist.forEach((song, i) => {
     const item = document.createElement('div');
     item.className = 'setlist-item';
-    item.draggable = true;
     item.dataset.index = i;
     item.innerHTML = `
-      <span class="drag-handle">⠿</span>
+      <span class="drag-handle" aria-label="拖动排序">⠿</span>
       <span class="setlist-item-title">${esc(song.title)}</span>
       <button class="setlist-remove" data-index="${i}" aria-label="移除">×</button>
     `;
-    item.addEventListener('dragstart', e => {
-      dragSrcIndex = i;
-      item.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    item.addEventListener('dragend', () => { item.classList.remove('dragging'); clearDropMarkers(); });
-    item.addEventListener('dragover', e => {
-      e.preventDefault();
-      if (dragSrcIndex === null) return;
-      const rect  = item.getBoundingClientRect();
-      const after = e.clientY > rect.top + rect.height / 2;
-      clearDropMarkers();
-      item.classList.add(after ? 'drop-after' : 'drop-before');
-    });
-    item.addEventListener('drop', e => {
-      e.preventDefault();
-      if (dragSrcIndex === null) return;
-      const rect  = item.getBoundingClientRect();
-      const after = e.clientY > rect.top + rect.height / 2;
-      let target  = i + (after ? 1 : 0);
-      const moved = setlist.splice(dragSrcIndex, 1)[0];
-      if (dragSrcIndex < target) target--;   // account for the removed item shifting indices
-      setlist.splice(target, 0, moved);
-      dragSrcIndex = null;
-      renderSetlistPanel();
-      renderSongs();
-    });
+    // Reorder via Pointer Events (works with touch on iOS/iPadOS, where the
+    // HTML5 drag-and-drop API never fires) as well as mouse and pen.
+    item.querySelector('.drag-handle').addEventListener('pointerdown', e => startDrag(e, item, i));
     item.querySelector('.setlist-remove').addEventListener('click', () => {
       setlist.splice(i, 1);
       renderSetlistPanel();
@@ -554,6 +554,58 @@ function renderSetlistPanel() {
     });
     body.appendChild(item);
   });
+}
+
+// Pointer-based drag reorder for the setlist. Unified across mouse/touch/pen.
+function startDrag(e, item, srcIndex) {
+  e.preventDefault();                 // stop touch-scroll / text-selection stealing the gesture
+  dragSrcIndex = srcIndex;
+  item.classList.add('dragging');
+  const handle = e.currentTarget;
+  handle.setPointerCapture(e.pointerId);   // keep receiving moves even off the element
+
+  // Compute the drop target from the current pointer Y, and paint the marker.
+  const update = clientY => {
+    clearDropMarkers();
+    const over = itemAtY(clientY);
+    if (!over) return null;
+    const rect  = over.el.getBoundingClientRect();
+    const after = clientY > rect.top + rect.height / 2;
+    over.el.classList.add(after ? 'drop-after' : 'drop-before');
+    return over.index + (after ? 1 : 0);
+  };
+
+  let target = update(e.clientY);
+  const onMove = ev => { const t = update(ev.clientY); if (t !== null) target = t; };
+  const onUp = () => {
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', onUp);
+    handle.removeEventListener('pointercancel', onUp);
+    item.classList.remove('dragging');
+    clearDropMarkers();
+    if (dragSrcIndex !== null && target !== null) {
+      let dest = target;
+      const moved = setlist.splice(dragSrcIndex, 1)[0];
+      if (dragSrcIndex < dest) dest--;   // account for the removed item shifting indices
+      setlist.splice(dest, 0, moved);
+      renderSetlistPanel();
+      renderSongs();
+    }
+    dragSrcIndex = null;
+  };
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', onUp);
+  handle.addEventListener('pointercancel', onUp);
+}
+
+// Which setlist item sits under this viewport Y (from the current DOM order).
+function itemAtY(clientY) {
+  const els = [...document.querySelectorAll('#setlist-body .setlist-item')];
+  for (let i = 0; i < els.length; i++) {
+    const rect = els[i].getBoundingClientRect();
+    if (clientY <= rect.bottom) return { el: els[i], index: i };
+  }
+  return els.length ? { el: els[els.length - 1], index: els.length - 1 } : null;
 }
 
 function clearDropMarkers() {

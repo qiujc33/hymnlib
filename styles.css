@@ -441,7 +441,7 @@ body {
   display: flex; align-items: center; gap: 0.6rem;
   padding: 0.6rem 0.75rem; border-radius: var(--radius);
   border: 1px solid var(--border); background: var(--bg);
-  cursor: grab; transition: opacity 0.15s, box-shadow 0.15s;
+  transition: opacity 0.15s, box-shadow 0.15s;
   user-select: none;
 }
 .setlist-item:hover    { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -449,7 +449,7 @@ body {
 /* Insertion indicator: a thick primary line on the edge where the song will drop */
 .setlist-item.drop-before { box-shadow: inset 0 3px 0 0 var(--primary); }
 .setlist-item.drop-after  { box-shadow: inset 0 -3px 0 0 var(--primary); }
-.drag-handle     { color: var(--text-muted); font-size: 1rem; cursor: grab; flex-shrink: 0; }
+.drag-handle     { color: var(--text-muted); font-size: 1rem; cursor: grab; flex-shrink: 0; touch-action: none; padding: 0.2rem; margin: -0.2rem; }
 .setlist-item-title { flex: 1; font-size: 0.9rem; font-weight: 500; }
 .setlist-remove {
   background: none; border: none; color: var(--text-muted);
