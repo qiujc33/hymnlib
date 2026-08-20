@@ -59,6 +59,11 @@
 
     <div class="controls-row">
       <div class="controls-left">
+        <div class="library-modes" role="group" aria-label="快速查看">
+          <button class="library-mode-btn active" data-library-mode="all">全部</button>
+          <button class="library-mode-btn" data-library-mode="favorites">☆ 收藏 0</button>
+          <button class="library-mode-btn" data-library-mode="recent">最近查看 0</button>
+        </div>
         <span id="results-count" class="results-count"></span>
       </div>
       <div class="controls-right">
@@ -128,6 +133,7 @@
         </div>
         <audio id="modal-audio" class="modal-audio" controls preload="none" style="display:none"></audio>
         <div class="modal-actions">
+          <button id="modal-favorite-btn" class="btn-favorite-toggle">☆ 收藏</button>
           <button id="modal-setlist-btn" class="btn-setlist-toggle">加入选曲</button>
           <a id="download-btn" href="#" class="btn-download" download>下载乐谱</a>
         </div>
@@ -155,8 +161,6 @@
   </div>
   <div id="setlist-overlay" class="setlist-overlay"></div>
 
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

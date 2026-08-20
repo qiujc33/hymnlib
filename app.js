@@ -13,11 +13,37 @@ let setlist       = [];     // session-only, resets on close
 let dragSrcIndex  = null;
 let currentSong   = null;   // song shown in the open modal, for the setlist toggle
 let pdfRenderToken = 0;     // guards against stale renders when songs are switched quickly
+let libraryMode   = 'all';  // 'all' | 'favorites' | 'recent'
+let favoriteTitles = new Set(readStoredArray('hymnlib:favorites'));
+let recentTitles    = readStoredArray('hymnlib:recent');
+let pdfJsPromise  = null;
+let pdfLibPromise = null;
 
-// Drive PDF.js with our own worker so pages render to canvas (no browser PDF chrome).
-if (window.pdfjsLib) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+function readStoredArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(value) ? value.filter(v => typeof v === 'string') : [];
+  } catch (e) { return []; }
+}
+
+function saveStoredArray(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+
+// PDF tools are self-hosted and loaded only when their feature is first used.
+async function loadPdfJs() {
+  if (!pdfJsPromise) {
+    pdfJsPromise = import('./vendor/pdfjs/pdf.mjs').then(lib => {
+      lib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdfjs/pdf.worker.mjs', document.baseURI).href;
+      return lib;
+    });
+  }
+  return pdfJsPromise;
+}
+
+async function loadPdfLib() {
+  if (!pdfLibPromise) pdfLibPromise = import('./vendor/pdf-lib/pdf-lib.esm.min.js');
+  return pdfLibPromise;
 }
 
 // ---- Init ----
@@ -26,9 +52,11 @@ async function init() {
   if (!CONFIG.SHEET_CSV_URL) { showState('setup'); return; }
   try {
     allSongs = await fetchSongs();
+    reconcileStoredSongs();
     validateTags(allSongs);
     showState('loaded');
     renderFilters();
+    setupLibraryModes();
     renderSongs();
     updateSetlistBtn();
     setupSearch();
@@ -190,6 +218,8 @@ function renderFilters() {
     tags.forEach(tag => {
       const btn = document.createElement('button');
       btn.className = 'tag-btn';
+      btn.dataset.filterCat = id;
+      btn.dataset.filterTag = tag;
       btn.innerHTML = `${esc(tag)} <span class="tag-count">${counts.get(tag)}</span>`;
       btn.addEventListener('click', () => toggleFilter(id, tag, btn));
       tagsDiv.appendChild(btn);
@@ -270,8 +300,16 @@ function songMatches(song) {
 // ---- Render songs ----
 function renderSongs() {
   let filtered = allSongs.filter(songMatches);
-  // Both views are pinyin-ordered; sort the whole set before paginating.
-  filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title, 'zh'));
+  if (libraryMode === 'favorites') {
+    filtered = filtered.filter(song => favoriteTitles.has(song.title));
+  } else if (libraryMode === 'recent') {
+    const order = new Map(recentTitles.map((title, index) => [title, index]));
+    filtered = filtered.filter(song => order.has(song.title))
+      .sort((a, b) => order.get(a.title) - order.get(b.title));
+  } else {
+    // Default view is pinyin-ordered; sort the whole set before paginating.
+    filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title, 'zh'));
+  }
 
   const size = PAGE_SIZE[viewMode];
   const totalPages = Math.max(1, Math.ceil(filtered.length / size));
@@ -369,14 +407,22 @@ function renderGrid(filtered) {
     card.setAttribute('role', 'button');
     card.setAttribute('tabindex', '0');
     const inSetlist = setlist.includes(song);
+    const favorite = favoriteTitles.has(song.title);
     card.innerHTML = `
       <a class="song-card-title song-link" href="${songLink(song)}">${esc(song.title)}</a>
       ${song.titleEn ? `<div class="song-card-en">${esc(song.titleEn)}</div>` : ''}
       <div class="song-card-tags">${tagPills(song)}</div>
+      <button class="favorite-btn ${favorite ? 'active' : ''}" aria-label="${favorite ? '取消收藏' : '收藏'} ${esc(song.title)}" title="${favorite ? '取消收藏' : '收藏'}">
+        ${favorite ? '★' : '☆'}
+      </button>
       <button class="add-setlist-btn ${inSetlist ? 'in-setlist' : ''}" title="${inSetlist ? '从选曲移除' : '加入选曲'}">
         ${inSetlist ? '−' : '+'}
       </button>
     `;
+    card.querySelector('.favorite-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      toggleFavorite(song);
+    });
     card.querySelector('.add-setlist-btn').addEventListener('click', e => {
       e.stopPropagation();
       toggleSetlist(song);
@@ -408,9 +454,12 @@ function renderList(filtered) {
             <td class="song-row-en">${esc(song.titleEn)}</td>
             <td>${tagPills(song)}</td>
             <td>
-              <button class="add-setlist-btn ${setlist.includes(song) ? 'in-setlist' : ''}" title="${setlist.includes(song) ? '从选曲移除' : '加入选曲'}">
-                ${setlist.includes(song) ? '−' : '+'}
-              </button>
+              <div class="row-actions">
+                <button class="favorite-btn ${favoriteTitles.has(song.title) ? 'active' : ''}" aria-label="${favoriteTitles.has(song.title) ? '取消收藏' : '收藏'} ${esc(song.title)}" title="${favoriteTitles.has(song.title) ? '取消收藏' : '收藏'}">${favoriteTitles.has(song.title) ? '★' : '☆'}</button>
+                <button class="add-setlist-btn ${setlist.includes(song) ? 'in-setlist' : ''}" title="${setlist.includes(song) ? '从选曲移除' : '加入选曲'}">
+                  ${setlist.includes(song) ? '−' : '+'}
+                </button>
+              </div>
             </td>
           </tr>
         `).join('')}
@@ -421,8 +470,12 @@ function renderList(filtered) {
     const song = sorted.find(s => s.title === row.dataset.title);
     bindSongLink(row.querySelector('.song-link'), song);
     row.addEventListener('click', e => {
-      if (e.target.closest('.add-setlist-btn') || e.target.closest('.song-link')) return;
+      if (e.target.closest('.add-setlist-btn') || e.target.closest('.favorite-btn') || e.target.closest('.song-link')) return;
       openModal(song);
+    });
+    row.querySelector('.favorite-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      toggleFavorite(song);
     });
     row.querySelector('.add-setlist-btn').addEventListener('click', e => {
       e.stopPropagation();
@@ -457,7 +510,7 @@ function setView(mode) {
 // initials ("ys") so searching stays instant, then refresh if a query is pending.
 function loadPinyin() {
   const s = document.createElement('script');
-  s.src = 'https://unpkg.com/pinyin-pro@3.26.0/dist/index.js';
+  s.src = 'vendor/pinyin-pro/index.js';
   s.onload = () => {
     const { pinyin } = window.pinyinPro || {};
     if (!pinyin) return;
@@ -481,6 +534,66 @@ function setupSearch() {
   });
 }
 
+// ---- Favorites and recently viewed ----
+function reconcileStoredSongs() {
+  const valid = new Set(allSongs.map(song => song.title));
+  favoriteTitles = new Set([...favoriteTitles].filter(title => valid.has(title)));
+  recentTitles = recentTitles
+    .filter((title, index) => valid.has(title) && recentTitles.indexOf(title) === index)
+    .slice(0, 12);
+  persistLibraryState();
+}
+
+function persistLibraryState() {
+  saveStoredArray('hymnlib:favorites', [...favoriteTitles]);
+  saveStoredArray('hymnlib:recent', recentTitles);
+}
+
+function setupLibraryModes() {
+  document.querySelectorAll('[data-library-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      libraryMode = btn.dataset.libraryMode;
+      currentPage = 1;
+      updateLibraryModeButtons();
+      renderSongs();
+    });
+  });
+  updateLibraryModeButtons();
+}
+
+function updateLibraryModeButtons() {
+  document.querySelectorAll('[data-library-mode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.libraryMode === libraryMode);
+  });
+  const favoritesBtn = document.querySelector('[data-library-mode="favorites"]');
+  const recentBtn = document.querySelector('[data-library-mode="recent"]');
+  if (favoritesBtn) favoritesBtn.textContent = `☆ 收藏 ${favoriteTitles.size}`;
+  if (recentBtn) recentBtn.textContent = `最近查看 ${recentTitles.length}`;
+}
+
+function toggleFavorite(song) {
+  favoriteTitles.has(song.title) ? favoriteTitles.delete(song.title) : favoriteTitles.add(song.title);
+  persistLibraryState();
+  updateLibraryModeButtons();
+  updateModalFavoriteBtn();
+  renderSongs();
+}
+
+function recordRecent(song) {
+  recentTitles = [song.title, ...recentTitles.filter(title => title !== song.title)].slice(0, 12);
+  persistLibraryState();
+  updateLibraryModeButtons();
+  if (libraryMode === 'recent') renderSongs();
+}
+
+function updateModalFavoriteBtn() {
+  const btn = document.getElementById('modal-favorite-btn');
+  if (!btn || !currentSong) return;
+  const favorite = favoriteTitles.has(currentSong.title);
+  btn.textContent = favorite ? '★ 已收藏' : '☆ 收藏';
+  btn.classList.toggle('active', favorite);
+}
+
 // ---- Direct song link ----
 function handleDirectLink() {
   const params = new URLSearchParams(window.location.search);
@@ -497,10 +610,17 @@ function setupTagReference() {
   const overlay = document.getElementById('tag-reference-overlay');
   const closeBtn = document.getElementById('tag-reference-close');
   const panel   = document.getElementById('tag-reference');
+  const categoryIds = { 类型: 'type', 主题: 'theme', 聚会环节: 'segment', 节期场合: 'observance' };
   const groups = Object.entries(CONFIG.TAGS || {}).map(([label, defs]) => {
-    const items = Object.entries(defs).map(([tag, meaning]) =>
-      `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
-    ).join('');
+    const cat = categoryIds[label];
+    const counts = cat ? getTagCounts(cat) : new Map();
+    const items = Object.entries(defs).map(([tag, meaning]) => {
+      const count = counts.get(tag) || 0;
+      return `<button type="button" class="ref-item" data-ref-cat="${cat || ''}" data-ref-tag="${esc(tag)}" ${count ? '' : 'disabled'}>
+        <span class="ref-term">${esc(tag)} <span class="ref-count">${count}首</span></span>
+        <span class="ref-desc">${esc(meaning)}</span>
+      </button>`;
+    }).join('');
     return `<section class="ref-group"><h3 class="ref-title">${esc(label)}</h3><div class="ref-items">${items}</div></section>`;
   }).join('');
   panel.innerHTML = groups;
@@ -515,6 +635,23 @@ function setupTagReference() {
     document.body.classList.remove('tag-reference-open');
     btn.focus();
   };
+
+  panel.querySelectorAll('.ref-item:not(:disabled)').forEach(item => {
+    item.addEventListener('click', () => {
+      const cat = item.dataset.refCat;
+      const tag = item.dataset.refTag;
+      if (!activeFilters[cat]?.has(tag)) {
+        activeFilters[cat].add(tag);
+        const filterBtn = [...document.querySelectorAll('.tag-btn')]
+          .find(candidate => candidate.dataset.filterCat === cat && candidate.dataset.filterTag === tag);
+        filterBtn?.classList.add('active');
+        updateClearButton();
+        currentPage = 1;
+        renderSongs();
+      }
+      close();
+    });
+  });
 
   btn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
@@ -649,7 +786,7 @@ async function downloadSetlistPDF() {
   btn.textContent = '合并中…';
   btn.disabled = true;
   try {
-    const { PDFDocument } = PDFLib;
+    const { PDFDocument } = await loadPdfLib();
     const merged = await PDFDocument.create();
     for (const song of setlist) {
       if (!song.file) continue;
@@ -711,6 +848,9 @@ function setupModal() {
     renderSongs();
     renderSetlistPanel();
   });
+  document.getElementById('modal-favorite-btn').addEventListener('click', () => {
+    if (currentSong) toggleFavorite(currentSong);
+  });
   document.getElementById('setlist-clear').addEventListener('click', clearSetlist);
   document.getElementById('setlist-panel-close').addEventListener('click', closeSetlistPanel);
   document.getElementById('setlist-download').addEventListener('click', downloadSetlistPDF);
@@ -723,7 +863,9 @@ function closeSetlistPanel() {
 
 function openModal(song) {
   currentSong = song;
+  recordRecent(song);
   updateModalSetlistBtn();
+  updateModalFavoriteBtn();
   document.getElementById('modal-title-cn').textContent = song.title;
   const enEl = document.getElementById('modal-title-en');
   enEl.textContent   = song.titleEn;
@@ -787,7 +929,8 @@ async function renderPdf(url) {
   pdfFitPage = false;
   updateZoomLabel();
   try {
-    const pdf = await pdfjsLib.getDocument(url).promise;
+    const pdfjsLib = await loadPdfJs();
+    const pdf = await pdfjsLib.getDocument({ url, enableScripting: false }).promise;
     if (token !== pdfRenderToken) return;   // a newer song was opened; abandon this render
     currentPdfDoc = pdf;
     await drawPdf(token);
