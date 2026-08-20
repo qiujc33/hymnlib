@@ -95,7 +95,8 @@ function parseCSV(text) {
       key:       obj['调']      || '',
       types:     split(obj['类型']),
       themes:    split(obj['主题']),
-      occasions: split(obj['场合']),
+      segments:  split(obj['聚会环节']),
+      observances: split(obj['节期礼仪']),
       notes:     obj['备注']    || '',
       file,
       downloadUrl: file ? `scores/${file}` : '',
@@ -127,7 +128,8 @@ function valuesFor(song, cat) {
   switch (cat) {
     case 'type':     return song.types;
     case 'theme':    return song.themes;
-    case 'occasion': return song.occasions;
+    case 'segment':  return song.segments;
+    case 'observance': return song.observances;
     case 'key':      return song.key ? [song.key] : [];
     default:         return [];
   }
@@ -144,7 +146,8 @@ function getTagCounts(cat) {
 const CANON_CATS = [
   { cat: 'type',     label: '类型', field: 'types' },
   { cat: 'theme',    label: '主题', field: 'themes' },
-  { cat: 'occasion', label: '场合', field: 'occasions' },
+  { cat: 'segment',  label: '聚会环节', field: 'segments' },
+  { cat: 'observance', label: '节期礼仪', field: 'observances' },
 ];
 
 // Fix 1: warn (in console) about sheet tags that aren't in the canonical list,
@@ -169,7 +172,8 @@ function renderFilters() {
   const container = document.getElementById('filters-section');
   container.innerHTML = '';
   [{ id: 'type', label: '类型' }, { id: 'theme', label: '主题' },
-   { id: 'occasion', label: '场合' }, { id: 'key', label: '调' }]
+   { id: 'segment', label: '聚会环节' }, { id: 'observance', label: '节期礼仪' },
+   { id: 'key', label: '调' }]
   .forEach(({ id, label }) => {
     const counts = getTagCounts(id);
     const tags = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'zh'));
@@ -256,7 +260,8 @@ function songMatches(song) {
   }
   if (activeFilters.type     ?.size > 0 && !song.types.some(t => activeFilters.type.has(t)))           return false;
   if (activeFilters.theme    ?.size > 0 && !song.themes.some(t => activeFilters.theme.has(t)))        return false;
-  if (activeFilters.occasion ?.size > 0 && !song.occasions.some(t => activeFilters.occasion.has(t))) return false;
+  if (activeFilters.segment  ?.size > 0 && !song.segments.some(t => activeFilters.segment.has(t)))    return false;
+  if (activeFilters.observance?.size > 0 && !song.observances.some(t => activeFilters.observance.has(t))) return false;
   if (activeFilters.key      ?.size > 0 && !activeFilters.key.has(song.key))                          return false;
   return true;
 }
@@ -328,7 +333,8 @@ function tagPills(song) {
     ...song.types.map(t => `<span class="song-tag type-tag">${esc(t)}</span>`),
     song.key  ? `<span class="song-tag key-tag">${esc(song.key)}</span>`   : '',
     ...song.themes.map(t    => `<span class="song-tag">${esc(t)}</span>`),
-    ...song.occasions.map(t => `<span class="song-tag">${esc(t)}</span>`),
+    ...song.segments.map(t  => `<span class="song-tag segment-tag">${esc(t)}</span>`),
+    ...song.observances.map(t => `<span class="song-tag observance-tag">${esc(t)}</span>`),
   ].join('');
 }
 
@@ -484,15 +490,17 @@ function handleDirectLink() {
 }
 
 // ---- Tag Reference ----
-// A glossary of what the 主题 tags mean, built from CONFIG.TAGS (term → description).
+// Glossary of every controlled tag, grouped by sheet category.
 function setupTagReference() {
   const btn   = document.getElementById('tag-ref-btn');
   const panel = document.getElementById('tag-reference');
-  const defs  = (CONFIG.TAGS && CONFIG.TAGS['主题']) || {};
-  const items = Object.entries(defs).map(([tag, meaning]) =>
-    `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
-  ).join('');
-  panel.innerHTML = `<div class="ref-group"><div class="ref-items">${items}</div></div>`;
+  const groups = Object.entries(CONFIG.TAGS || {}).map(([label, defs]) => {
+    const items = Object.entries(defs).map(([tag, meaning]) =>
+      `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
+    ).join('');
+    return `<div class="ref-group"><div class="ref-title">${esc(label)}</div><div class="ref-items">${items}</div></div>`;
+  }).join('');
+  panel.innerHTML = groups;
   btn.addEventListener('click', () => {
     const open = panel.style.display !== 'none';
     panel.style.display = open ? 'none' : 'block';
