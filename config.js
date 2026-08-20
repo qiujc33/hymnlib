@@ -5,11 +5,11 @@ const CONFIG = {
 
   // ---------------------------------------------------------------
   // SHEET COLUMNS (row 1 must have exactly these headers):
-  //   标题 | 英文标题 | 调 | 类型 | 主题 | 聚会环节 | 节期礼仪 | PDF链接 | 音频链接 | 备注
+  //   标题 | 英文标题 | 调 | 类型 | 主题 | 聚会环节 | 节期场合 | PDF链接 | 音频链接 | 备注
   //
   // PDF链接  → filename only, e.g.  主祷文.pdf      (served from scores/)
   // 音频链接 → filename only, e.g.  主祷文.mp3      (served from audio/, optional)
-  // 主题/聚会环节/节期礼仪 → semicolon-separated, e.g.  神的属性;感恩
+  // 主题/聚会环节/节期场合 → semicolon-separated, e.g.  神的属性;感恩
   // ---------------------------------------------------------------
 
   // TAG REFERENCE — use these exact tag names in the sheet.
@@ -17,7 +17,7 @@ const CONFIG = {
   // the 标签参考 panel, so keep the descriptions reader-facing.
   //
   // Design: 主题 = WHAT the lyrics are about; 聚会环节 = WHERE the song normally
-  //         functions in a service; 节期礼仪 = WHEN it has a specific observance.
+  //         functions in a service; 节期场合 = WHEN it has a specific season/occasion.
   TAGS: {
     类型: {
       '传统圣诗': '历史圣诗传统，通常以分节诗歌及固定曲调传唱',
@@ -51,7 +51,7 @@ const CONFIG = {
       '圣餐': '适合在圣餐前后记念基督并回应恩约',
       '差遣结束': '差遣会众进入见证、服事、门徒生活或结束聚会',
     },
-    节期礼仪: {
+    节期场合: {
       '将临期': '等候基督降临并预备迎接主',
       '圣诞节': '基督降生与道成肉身',
       '主显节': '基督向万民显现',
@@ -62,9 +62,7 @@ const CONFIG = {
       '升天日': '基督升天并在天掌权',
       '圣灵降临节': '圣灵降临并建立、装备教会',
       '三一主日': '明确颂赞圣父、圣子、圣灵',
-      '圣餐': '主的晚餐与圣餐礼',
       '洗礼': '洗礼、新生命与信仰告白',
-      '婚礼': '基督徒婚姻、盟约与祝福',
       '安息礼拜': '安息礼拜、哀伤、复活盼望与安葬',
     },
   },

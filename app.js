@@ -96,7 +96,8 @@ function parseCSV(text) {
       types:     split(obj['类型']),
       themes:    split(obj['主题']),
       segments:  split(obj['聚会环节']),
-      observances: split(obj['节期礼仪']),
+      // Accept the previous heading during a short publish/cache transition.
+      observances: split(obj['节期场合'] || obj['节期礼仪']),
       notes:     obj['备注']    || '',
       file,
       downloadUrl: file ? `scores/${file}` : '',
@@ -147,7 +148,7 @@ const CANON_CATS = [
   { cat: 'type',     label: '类型', field: 'types' },
   { cat: 'theme',    label: '主题', field: 'themes' },
   { cat: 'segment',  label: '聚会环节', field: 'segments' },
-  { cat: 'observance', label: '节期礼仪', field: 'observances' },
+  { cat: 'observance', label: '节期场合', field: 'observances' },
 ];
 
 // Fix 1: warn (in console) about sheet tags that aren't in the canonical list,
@@ -172,7 +173,7 @@ function renderFilters() {
   const container = document.getElementById('filters-section');
   container.innerHTML = '';
   [{ id: 'type', label: '类型' }, { id: 'theme', label: '主题' },
-   { id: 'segment', label: '聚会环节' }, { id: 'observance', label: '节期礼仪' },
+   { id: 'segment', label: '聚会环节' }, { id: 'observance', label: '节期场合' },
    { id: 'key', label: '调' }]
   .forEach(({ id, label }) => {
     const counts = getTagCounts(id);
@@ -492,19 +493,34 @@ function handleDirectLink() {
 // ---- Tag Reference ----
 // Glossary of every controlled tag, grouped by sheet category.
 function setupTagReference() {
-  const btn   = document.getElementById('tag-ref-btn');
-  const panel = document.getElementById('tag-reference');
+  const btn     = document.getElementById('tag-ref-btn');
+  const overlay = document.getElementById('tag-reference-overlay');
+  const closeBtn = document.getElementById('tag-reference-close');
+  const panel   = document.getElementById('tag-reference');
   const groups = Object.entries(CONFIG.TAGS || {}).map(([label, defs]) => {
     const items = Object.entries(defs).map(([tag, meaning]) =>
       `<div class="ref-item"><span class="ref-term">${esc(tag)}</span><span class="ref-desc">${esc(meaning)}</span></div>`
     ).join('');
-    return `<div class="ref-group"><div class="ref-title">${esc(label)}</div><div class="ref-items">${items}</div></div>`;
+    return `<section class="ref-group"><h3 class="ref-title">${esc(label)}</h3><div class="ref-items">${items}</div></section>`;
   }).join('');
   panel.innerHTML = groups;
-  btn.addEventListener('click', () => {
-    const open = panel.style.display !== 'none';
-    panel.style.display = open ? 'none' : 'block';
-    btn.textContent = open ? '标签参考 ▾' : '标签参考 ▴';
+
+  const open = () => {
+    overlay.style.display = 'flex';
+    document.body.classList.add('tag-reference-open');
+    closeBtn.focus();
+  };
+  const close = () => {
+    overlay.style.display = 'none';
+    document.body.classList.remove('tag-reference-open');
+    btn.focus();
+  };
+
+  btn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') close();
   });
 }
 

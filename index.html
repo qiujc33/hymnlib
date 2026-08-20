@@ -37,10 +37,9 @@
       </div>
       <div class="filter-drawer-body">
         <div class="filters-header">
-          <button id="tag-ref-btn" class="btn-text">标签参考 ▾</button>
+          <button id="tag-ref-btn" class="btn-text">标签参考</button>
           <button id="clear-filters-btn" class="btn-clear" disabled>清除筛选</button>
         </div>
-        <div id="tag-reference" class="tag-reference" style="display:none"></div>
         <section class="filters-section" id="filters-section"></section>
       </div>
     </div>
@@ -87,6 +86,20 @@
   </main>
 
   </div><!-- /.layout -->
+
+  <!-- Tag Reference Dialog -->
+  <div id="tag-reference-overlay" class="tag-reference-overlay" style="display:none">
+    <section class="tag-reference-dialog" role="dialog" aria-modal="true" aria-labelledby="tag-reference-title">
+      <div class="tag-reference-header">
+        <div>
+          <h2 id="tag-reference-title">标签参考</h2>
+          <p>统一选歌标签的定义与使用范围</p>
+        </div>
+        <button id="tag-reference-close" class="modal-close-btn" aria-label="关闭标签参考">✕</button>
+      </div>
+      <div id="tag-reference" class="tag-reference"></div>
+    </section>
+  </div>
 
   <!-- PDF Viewer Modal -->
   <div id="modal-overlay" class="modal-overlay" style="display:none">
